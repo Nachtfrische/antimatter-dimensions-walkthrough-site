@@ -235,7 +235,7 @@
   }
 
   /* Der Kontextblock ist der Weg zu einer freien Rueckfrage in einem Chat:
-     eigenständige Übergabe mit Parserdaten, vollständigen Schritten und Quellen. */
+     Spielstand und aktuelle Schritte für eine Rückfrage. */
   function kontextText() {
     if (!profil || !aktuellerPlan) return "";
     return INHALT.kontextFuer(profil, aktuellerPlan, {
