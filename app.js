@@ -24,6 +24,8 @@
     phasenEinleitung: el("phasen-einleitung"),
     hinweise: el("hinweise"),
     hinweisBlock: el("hinweis-block"),
+    achievementBlock: el("achievement-block"),
+    achievementListe: el("achievement-liste"),
     schrittfolge: el("schrittfolge"),
     konzeptListe: el("konzept-liste"),
     konzeptLeer: el("konzept-leer"),
@@ -263,6 +265,15 @@
 
     knoten.schrittfolge.innerHTML = aktuellerPlan.schritte
       .map((schritt, index) => schrittMarkup(schritt, index + 1)).join("");
+
+    const achievements = aktuellerPlan.achievements ?? [];
+    knoten.achievementBlock.hidden = achievements.length === 0;
+    knoten.achievementListe.innerHTML = achievements.map(a => `<li>
+      <h4>${schuetze(a.zeitpunkt)}: r${schuetze(a.id)} „${schuetze(a.name)}“</h4>
+      <p>${schuetze(a.text)}</p>
+      ${a.anleitung.length ? `<details class="aufklappen"><summary>Anleitung für r${schuetze(a.id)}</summary>
+        <ol class="handgriffe">${a.anleitung.map(text => `<li>${schuetze(text)}</li>`).join("")}</ol></details>` : ""}
+    </li>`).join("");
 
     if (aktuellerPlan.hinweise.length) {
       knoten.hinweise.innerHTML = aktuellerPlan.hinweise

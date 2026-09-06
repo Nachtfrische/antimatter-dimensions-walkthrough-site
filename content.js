@@ -1227,7 +1227,7 @@
     const erreicht = name => reihenfolge.indexOf(name) <= reihenfolge.indexOf(phase);
     const r = p.resources ?? {};
     const daten = {
-      basis: felderAus(p, "platform version legacySave achievementIds dimensionBoosts galaxies eighthDimensionAmount eighthDimensionBought"),
+      basis: felderAus(p, "platform version legacySave achievementIds dimensionBoosts galaxies eighthDimensionAmount eighthDimensionBought recentEternityEPLog10 recentInfinityIPLog10 peakEPGain eternityAutobuyer currentInfinitySeconds currentEternitySeconds replicantiLog10 replicantiRounded"),
       ressourcen: felderAus(r, "antimatterExponent maxAntimatterExponent"),
     };
     if (erreicht("infinity")) {
@@ -1392,6 +1392,9 @@
       ...zeilen,
       "",
       "## Was mein Walkthrough als Nächstes vorschlägt",
+      ...((plan.achievements ?? []).length ? ["", "Noch mitnehmen (Zeitpunkt beachten, eigene Läufe einzeln spielen):",
+        ...plan.achievements.flatMap(a => [`- ${a.zeitpunkt}: r${a.id} „${a.name}“. ${a.text}`,
+          ...a.anleitung.map(text => `  - ${text}`)]), ""] : []),
       ...(schritte.length ? schritte : ["(keine Schritte)"]),
       ...(offeneHinweise.length ? ["", "## In dieser Reality nicht mehr erreichbar", ...offeneHinweise] : []),
       "",

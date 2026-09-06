@@ -754,7 +754,26 @@
       automatorMode: safeInt(reality.automator?.state?.mode, 10),
       autoAchievementsEnabled: Boolean(reality.autoAchieve),
       gainedAutoAchievements: Boolean(reality.gainedAutoAchievements),
+      // History is newest first. Placeholder runs must not count toward r111/r143.
+      recentEternityEPLog10: (Array.isArray(save.records?.recentEternities) ? save.records.recentEternities : [])
+        .slice(0, 10).map(run => Array.isArray(run) && Number.isFinite(run[0]) && run[0] < Number.MAX_VALUE
+          ? decimalLog10(run[2]) : null),
+      recentInfinityIPLog10: (Array.isArray(save.records?.recentInfinities) ? save.records.recentInfinities : [])
+        .slice(0, 10).map(run => Array.isArray(run) && Number.isFinite(run[0]) && run[0] < Number.MAX_VALUE
+          ? decimalLog10(run[2]) : null),
+      peakEPGain: decimalNumber(save.records?.thisEternity?.bestEPminVal),
+      eternityAutobuyer: {
+        enabled: Boolean(save.auto?.autobuyersOn && save.auto?.eternity?.isActive),
+        mode: safeInt(save.auto?.eternity?.mode, 2),
+        amount: decimalNumber(save.auto?.eternity?.amount),
+        dynamicAmount: Boolean(save.auto?.eternity?.increaseWithMult),
+      },
       requirementChecks: {
+        onlyAD1: save.requirementChecks?.eternity?.onlyAD1 ?? null,
+        onlyAD8: save.requirementChecks?.eternity?.onlyAD8 ?? null,
+        noAD1: save.requirementChecks?.eternity?.noAD1 ?? null,
+        noAM: save.requirementChecks?.reality?.noAM ?? null,
+        noPurchasedTT: save.requirementChecks?.reality?.noPurchasedTT ?? null,
         noEternities: Boolean(save.requirementChecks?.reality?.noEternities),
         noInfinities: Boolean(save.requirementChecks?.reality?.noInfinities),
         noContinuum: Boolean(save.requirementChecks?.reality?.noContinuum),
@@ -766,6 +785,7 @@
       resources: {
         antimatterExponent: decimalExponent(save.antimatter),
         infinityPointsExponent: decimalExponent(save.infinityPoints),
+        infinityPointsLog10: decimalLog10(save.infinityPoints),
         eternityPointsExponent: decimalExponent(save.eternityPoints),
         maxEternityPointsExponent: maxEPExponent,
         maxAntimatterExponent: maxAMExponent,
@@ -832,6 +852,10 @@
       replicantiUnlocked: Boolean(save.replicanti?.unl),
       replicantiGalaxies: safeInt(save.replicanti?.galaxies, Number.MAX_SAFE_INTEGER),
       replicantiGalaxyCap: safeInt(save.replicanti?.boughtGalaxyCap, Number.MAX_SAFE_INTEGER),
+      replicantiLog10: decimalLog10(save.replicanti?.amount),
+      replicantiRounded: Math.round(decimalNumber(save.replicanti?.amount)),
+      currentInfinitySeconds: Number.isFinite(save.records?.thisInfinity?.time) ? save.records.thisInfinity.time / 1000 : null,
+      currentEternitySeconds: Number.isFinite(save.records?.thisEternity?.time) ? save.records.thisEternity.time / 1000 : null,
       totalTickGained: safeInt(save.totalTickGained, Number.MAX_SAFE_INTEGER),
       infinityPowerExponent: decimalExponent(save.infinityPower),
       eighthDimensionAmount: decimalNumber(save.dimensions?.antimatter?.[7]?.amount),

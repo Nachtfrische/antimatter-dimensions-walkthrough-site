@@ -421,13 +421,20 @@
       .flatMap(tree => tree.split("|")[0].split(",").map(Number)));
     for (const stage of etappen) baeume.push({ bezeichnung: `Ab ${zahl(stage.tt)} TT: auf diesen EP-Farm-Tree wechseln`,
       importString: stage.tree, abTT: stage.tt });
+    const kurzFarmen = (p.resources?.eternities ?? 0) >= 100 && budget < 66;
+    const peak = p.peakEPGain > 0 && p.peakEPGain < Number.MAX_VALUE
+      ? Number(p.peakEPGain).toExponential(2).replace("e+", "e") : null;
+    const autoFarm = kurzFarmen ? `EP-Farmen lassen: Automatic Eternity → „Eternity at X EP“, ${peak
+      ? `${peak} EP als Startwert (gespeicherter EP/min-Peak)`
+      : "EP-Betrag hinter „Peak … at … EP“ am Eternity-Knopf eintragen"}. „Dynamic amount“ und Time-Study-Respec ausschalten, Eternity-Autobuyer einschalten. Bei ${zahl(zielTT)} TT stoppen und den Save neu einlesen. Nach Käufen oder Tree-Wechsel den Peak neu ablesen; für längere Pushes den Autobuyer ausschalten.` : null;
     return { baeume, soGehts: [
       tree ? "Außerhalb einer Challenge Time Studies respecen, eternitieren und den mit Jetzt bezeichneten EP-Farm-Tree laden."
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
-      ...(studies.has(121) ? [`${hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal." : "Mit Active zuerst zehn kurze Eternities für TS121 spielen."} Danach Eternity-Autobuyer aus und Replicanti-Galaxien mit R kaufen.${hat(p.achievementIds, 138) ? " r138 automatisiert die Active-RGs." : ""}`] : []),
+      ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal." : "Automatic Eternity auf „Eternity at X EP“ mit 0 stellen, einschalten und zehn kurze Eternities für TS121 abwarten."} Danach Eternity-Autobuyer aus und Replicanti-Galaxien mit R kaufen.${hat(p.achievementIds, 138) ? " r138 automatisiert die Active-RGs." : ""}`] : []),
       ...(studies.has(181) ? ["Ohne TS181 nach vollen Replicanti-Galaxien crunchen. Sobald TS181 im Baum steht: Crunch-Autobuyer ausschalten, Dimboost/Galaxy unbeschränkt auf 0 s, Eternity-Autobuyer für den Push aus."]
         : studies.has(61) ? ["Nach vollen Replicanti-Galaxien crunchen; Eternity-Autobuyer für den abschließenden EP-Push ausschalten."] : []),
+      ...(autoFarm ? [autoFarm] : []),
       `Time Dimensions und ×5 EP weiterkaufen; AM-, IP- und EP-Theorems bis ${zahl(zielTT)} Gesamt-TT sammeln.`,
     ] };
   }
@@ -1486,6 +1493,7 @@
         ...aufbau.soGehts.filter(t => !t.startsWith("Time Dimensions und ×5 EP")),
         id === 15 ? "TD1–4 und AM-/IP-/EP-Theorems weiterkaufen. Multiply Eternity Points by 5 und dessen Autobuyer bleiben aus. Wenn du jetzt schon e10 EP erhältst, kannst du direkt eternitieren."
           : "TD1–4, Multiply Eternity Points by 5 und AM-/IP-/EP-Theorems weiterkaufen. EC1 bleibt bis zum Ziel ungespielt; dafür nicht der normalen EC1-Route folgen.",
+        ...((p.resources?.eternities ?? 0) >= 100 ? [`Für den abschließenden Ziel-Lauf: „Eternity at X EP“ mit e${zielEP}, „Dynamic amount“ aus, Eternity-Autobuyer an. Bis zum Reset warten; TD1–4 und Theorems weiterkaufen. Das Ziel meint EP-Gewinn pro Reset. Stockt der Lauf vorher, kleinere EP-Gewinne manuell einsammeln und weiter ausbauen.`] : []),
         `Wiederholt EP einsammeln und den Baum ausbauen, bis du nach einer Eternity mindestens e${zielEP} EP besitzt. Falls eine TT-Marke vorher erreicht ist, den Save für den nächsten Baum neu einlesen; die EP-Bedingung bleibt das Ziel.`,
         `Nach der Eternity unter Reality → Upgrades bei ${ruName(id, true)} ohne Shift auf Cost: prüfen. ${id === 15 ? "Danach ×5-EP-Käufe und ihren Autobuyer einschalten. Die 50 RM für diesen Upgrade-Kauf vorerst zurückhalten: Zuerst The Knowing Existence und Linguistically Expand finanzieren."
           : `Danach ist EC1 erlaubt. ${p.resources?.realityMachines >= 50 ? "The Knowing Existence jetzt für 50 RM kaufen; " + zahl(p.resources.realityMachines - 50) + " RM bleiben." : "Die Bedingung bleibt gespeichert; der Kauf kostet 50 RM."}`}`,
@@ -2419,6 +2427,117 @@
     };
   }
 
+  // Official normal-achievements.js supplies conditions; the supplied Discord
+  // pins supply deliberate detours. Current-run evidence never comes from a
+  // lifetime record. These are opportunities, not extra progression blockers.
+  function achievementHinweise(p, phase) {
+    if (!Array.isArray(p.achievementIds) || ["pelle", "complete"].includes(phase)) return [];
+    const result = [];
+    const r = p.resources ?? {};
+    const q = p.requirementChecks ?? {};
+    const c = p.currentChallenge ?? {};
+    const ruhig = !c.normal && !c.infinity && !c.eternity && !p.celestials?.current;
+    const frei = ruhig && !p.dilationActive;
+    const ep = p.maxEPExponent ?? 0;
+    const ip = r.infinityPointsLog10 ?? r.infinityPointsExponent ?? 0;
+    const eternityBereit = ip >= Math.log10(Number.MAX_VALUE) && p.infinityDimensionsUnlocked === 8;
+    const add = (id, name, wenn, zeitpunkt, text, anleitung = []) => {
+      if (wenn && !hat(p.achievementIds, id)) result.push({ id, name, zeitpunkt, text, anleitung });
+    };
+    const serie = logs => {
+      if (!Number.isFinite(logs?.[0])) return 0;
+      let n = 1;
+      while (n < Math.min(logs.length, 10) && Number.isFinite(logs[n])
+        && logs[n - 1] - logs[n] >= Math.log10(Number.MAX_VALUE) - 1e-9) n++;
+      return n;
+    };
+    const epSerie = serie(p.recentEternityEPLog10);
+    const ipSerie = serie(p.recentInfinityIPLog10);
+    const r143Jetzt = ep >= 4000;
+    // Row 14 is obtainable before Reality 1. The reminder starts only once that
+    // reset is already part of the player's progression; later runs retain it.
+    add(143, "Yo dawg, I heard you liked reskins...", frei && (r143Jetzt || p.realities > 0),
+      r143Jetzt ? "Vor der nächsten Reality" : "Für später in dieser Reality",
+      r143Jetzt ? "Hol die zehn aufsteigenden Eternities vor dem Reality-Reset. Danach setzen Galaxien deine Dimension Boosts nicht mehr zurück."
+        : "Ab e4000 EP-Rekord: Save neu einlesen und zehn aufsteigende Eternities vor dem Reality-Reset mitnehmen. Dann erscheint hier die Anleitung; jetzt erst das aktuelle EP-Ziel verfolgen.",
+      r143Jetzt ? [
+        `Auto-Eternity pausieren.${p.automatorUnlocked ? " Auch den Automator pausieren." : ""}${hat(p.realityUpgrades, 25) ? " Auto-Reality ausschalten." : ""} Nicht auf 0 EP farmen und keine Challenge einschieben: Ein kleiner EP-Gewinn unterbricht die Serie. Time-Study-Respec nur für den Start verwenden; danach die Studies schrittweise ausbauen.`,
+        epSerie >= 2 ? `Deine letzten ${epSerie} Eternities bilden bereits eine passende Serie (von 10). ${epSerie < 10 ? `Nächster sicherer Gewinn: mindestens e${Math.ceil(p.recentEternityEPLog10[0] + 310)} EP. Falls das zu hoch ist: Autobuyer pausieren, Studies respecen, eternitieren und ohne Studies nur AD1 kaufen. Mit möglichst kleinem EP-Gewinn eine neue Serie beginnen.` : "Alle zehn Abstände passen. Prüfe die Achievement-Anzeige im Spiel, bevor du resettest."}`
+          : "Beginne mit möglichst wenig EP: Autobuyer pausieren, Studies respecen, eternitieren; dann ohne Studies nur AD1 kaufen und für einen kleinen EP-Gewinn eternitieren. Um e1000 EP als Startgewinn ist hier normal.",
+        "Jeder weitere Gewinn muss mindestens das 1,79e308-Fache des vorigen sein; ×e310 gibt Reserve. Beispiel für zehn Gewinne: e1000 → e1310 → e1620 → e1930 → e2240 → e2550 → e2860 → e3170 → e3480 → e3790 EP. Bei höherem tatsächlichem Gewinn das nächste Ziel von diesem Wert aus neu berechnen.",
+        "Studies und Autobuyer nur nach Bedarf dazunehmen: zunächst bis TS62, dann IDs, bis TS103, dann bis TS171 mit Active, danach TS181, TS214 und die späten Studies. Replicanti-Galaxien zuerst manuell und sparsam kaufen; erst am Ende wieder automatisch. Am Eternity-Knopf immer den Gewinn dieses Resets prüfen, nicht deinen EP-Bestand.",
+        "Nach jeder passenden Eternity kannst du einen neuen Save einlesen, um Serienstand und nächstes EP-Ziel zu sehen. Nach r143 den normalen Tree und die zuvor verwendeten Autobuyer wiederherstellen, dann den Hauptplan fortsetzen.",
+      ] : []);
+    add(111, "Yo dawg, I heard you liked infinities...", frei && (ip >= 4000 || ipSerie >= 2), "Vor der nächsten Eternity",
+      `Zehn Crunches mit jeweils mindestens ×1,79e308 IP-Gewinn verhindern künftig den Antimatter-Reset bei Dimboosts und Galaxien.${ipSerie >= 2 ? ` Aktuelle Serie: ${ipSerie}/10.` : ""}`,
+      ["Eternity- und Crunch-Autobuyer pausieren. Zehn Crunches mit möglichst kleinem Startgewinn spielen, danach jeden Gewinn gegenüber dem tatsächlich letzten um ×e310 erhöhen. Studies/Replicanti-Galaxien schrittweise dazunehmen; keine kleinen Zwischen-Crunches.",
+        ...(ipSerie >= 2 && ipSerie < 10 ? [`Nächstes sicheres Ziel: e${Math.ceil(p.recentInfinityIPLog10[0] + 310)} IP Gewinn im Crunch-Knopf. Wenn das nicht erreichbar ist, die Serie mit kleinem Gewinn neu beginnen.`] : []),
+        "Nach dem Achievement die zuvor verwendeten Autobuyer wieder einschalten."]);
+
+    // Reset conditions already preserved by this exact Eternity.
+    add(101, "8 nobody got time for that", frei && eternityBereit && q.onlyAD8 === true, "Bei der nächsten Eternity",
+      "Du hast in dieser Eternity keine AD1–7 gekauft. Lass deren Autobuyer aus und eternitiere jetzt, bevor du eine davon kaufst.");
+    add(122, "You're already dead.", frei && eternityBereit && q.onlyAD1 === true, "Bei der nächsten Eternity",
+      "Du hast in dieser Eternity keine AD2–8 gekauft. Lass deren Autobuyer aus und eternitiere jetzt, bevor du eine davon kaufst.");
+    add(107, "Do you really need a guide for this?", frei && eternityBereit && r.infinities < 10, "Vor dem nächsten Crunch",
+      "Du hast weniger als 10 Infinities. Eternitiere jetzt, bevor ein weiterer Crunch die Bedingung verliert.");
+    add(116, "Do I really need to infinity", frei && eternityBereit && r.infinities <= 1, "Vor dem nächsten Crunch",
+      "Du hast höchstens eine Infinity. Eternitiere jetzt für den IP-Multiplikator; vorher keinen weiteren Crunch auslösen.");
+    for (const [id, name, limit] of [[104, "That wasn't an eternity", 30], [113, "Eternities are the new infinity", 0.25]]) {
+      add(id, name, frei && eternityBereit && Number.isFinite(p.currentEternitySeconds) && p.currentEternitySeconds <= limit,
+        "Jetzt eternitieren", `Beim Speichern lag diese Eternity innerhalb von ${limit === 30 ? "30 Sekunden" : "250 ms"} Spielzeit. Wenn die Anzeige noch darunter liegt, sofort eternitieren; sonst beim nächsten kurzen Lauf versuchen.${id === 113 ? " Belohnung: ×2 Eternities." : " Belohnung: Start mit 5e25 IP."}`);
+    }
+    add(108, "We COULD afford 9", frei && eternityBereit && p.replicantiRounded === 9, "Jetzt eternitieren",
+      "Beim Speichern hattest du gerundet genau 9 Replicanti. Sofort eternitieren, falls die Anzeige noch 9 zeigt; weiteres Wachstum verliert die Gelegenheit.");
+    add(95, "Is this safe?", frei && p.replicantiLog10 >= 300 && Number.isFinite(p.currentInfinitySeconds) && p.currentInfinitySeconds <= 3600,
+      "Vor der nächsten Replicanti-Galaxie", "Replicanti sind fast am Limit. Auto Galaxy ausschalten, noch nicht crunchen und das Limit (ca. 1,79e308) innerhalb einer Stunde dieser Infinity erreichen. Danach bleiben Replicanti bei Crunches erhalten.");
+
+    // Deliberate side runs: no interruption of ECs, Dilation or Celestial runs.
+    const autoAlt = p.realities > 0 && p.autoAchievementsEnabled;
+    add(71, "ERROR 909: Dimension not found", frei && epSerie < 2 && (r.maxInfinityPointsExponent ?? 0) >= 45,
+      "Beim nächsten kurzen Challenge-Abstecher", `C2 mit genau einer gekauften AD1 abschließen: Das gibt ×3 auf AD1. ${p.currentRun?.eternity ? "Sammle den EP-Gewinn deines laufenden Pushs vorher ein. " : ""}Der Challenge-Start setzt die Infinity zurück.`,
+      [`Autobuyer pausieren, C2 starten, genau eine AD1 über Buy 1 kaufen. Nur Tickspeed dazu, keine weiteren Dimensionen, Dimboosts oder Galaxien. Sobald möglich Big Crunch drücken. Danach die zuvor verwendeten Autobuyer wiederherstellen.${p.realities > 0 ? " Schutzschalter für offene Reality-Upgrades beibehalten." : ""}`]);
+    add(43, "How the antitables have turned..", frei && ep >= 6 && !autoAlt, "Vor dem nächsten langen Push",
+      "Antitables lässt sich in einem kurzen eigenen Lauf erledigen: Die Multiplikatoren müssen strikt AD1 < AD2 < … < AD8 sein.",
+      ["Autobuyer pausieren, Time Studies respecen und eternitieren. Nicht crunchen. AD8 für einen Dimboost kaufen und opfern. Danach AD3 kaufen, bis ihr Multiplikator über AD2 liegt; ebenso AD4 bis AD8. Die angezeigten Multiplikatoren vergleichen. Anschließend den bisherigen Tree und die Autobuyer wiederherstellen."]);
+    add(112, "Never again", frei && p.eternityUpgradeCount >= 3 && ip >= 600 && !autoAlt, "Vor dem weiteren EP-Push",
+      "Alle acht Infinity Challenges mit eingeschaltetem Retry schnell wiederholen. Ziel: Summe unter 750 ms. Das verbessert zugleich dein Eternity Upgrade aus IC-Zeiten. Danach Retry wieder ausschalten.");
+    add(115, "I wish I had gotten 7 eternities", !p.celestials?.current && !c.normal && !c.infinity && c.eternity > 0 && p.infinityChallengesUnlocked > 0,
+      "In dieser Eternity Challenge", "Starte eine bereits verfügbare Infinity Challenge innerhalb deiner EC. Das zählt sofort, setzt aber den aktuellen Infinity-Aufbau zurück. Falls dein EC-Lauf schon weit ist, nutze erst einen späteren frischen EC-Start; danach die IC verlassen und die EC fortsetzen.");
+    add(131, "No ethical consumption", frei && hat(p.studies, 191) && (r.bankedInfinities ?? 0) + (r.infinities ?? 0) * 0.05 > 2e9,
+      "Bei der nächsten Eternity", "Mit TS191 reicht die Bank nach dieser Eternity für mehr als 2 Milliarden Banked Infinities. TS191 vor dem Reset behalten. Belohnung: ×2 Infinities und künftig 5 % Banking auch ohne TS191.");
+    add(132, "Unique snowflakes", frei && p.dilationUnlocked && ep >= 2350, "Vor dem nächsten Dilation-Push",
+      q.noRG === true ? "Diese Eternity hat noch keine Replicanti-Galaxie erhalten. Auto Galaxy ausschalten und ohne R auf 569 Antimatter-Galaxien pushen; das verstärkt TP und DT."
+        : "Für den TP-/DT-Bonus einen eigenen Lauf ohne Replicanti-Galaxien starten: Auto Galaxy vor der Eternity ausschalten, danach ohne R auf 569 Antimatter-Galaxien pushen. Richtwert aus den Pins: e2350 EP; die erreichbare Galaxienzahl entscheidet.");
+    add(125, "Like feasting on a behind", frei && hat(p.dilationUpgrades, 7) && !hat(p.realityUpgrades, 11) && !autoAlt, "Beim nächsten eigenen Eternity-Lauf",
+      "Mit deinem IP-Multiplikator aus DT geht dieser Bonus leicht: AD1- und Crunch-Autobuyer vor der Eternity ausschalten. Danach keine AD1 kaufen und nicht crunchen; mit TS181 bis e90 IP aufbauen. Erst nach dem Achievement die Einstellungen wiederherstellen.");
+    add(128, "What do I have to do to get rid of you", frei && ep >= 100 && p.studies?.length === 0 && ip >= 21000,
+      "Vor dem nächsten Study-Kauf", "Du bist ohne Time Studies nahe an e22000 IP. Den Baum noch leer lassen, bis e22000 IP erreicht sind; dafür bei Bedarf crunchen. Danach den normalen Tree laden. Belohnung: TD-Multiplikator aus der Zahl deiner Studies.");
+    add(134, "When will it be enough?", ruhig && p.dilationUnlocked && hat(p.studies, 192) && !autoAlt, "Vor der nächsten Eternity",
+      "Mit TS192 kannst du e18000 Replicanti ansammeln. Auto Galaxy und Auto-Eternity ausschalten, R nicht drücken; Replicanti bis e18000 wachsen lassen. Ein eigener längerer Lauf, anschließend Einstellungen wiederherstellen. Belohnung: doppelte Replicanti-Geschwindigkeit unter dem Limit.");
+    add(137, "Now you're thinking with dilation!", ruhig && p.dilationUnlocked && ep >= 2350, "Beim nächsten frischen Dilation-Lauf",
+      "Versuche e260000 Antimatter innerhalb einer Minute Spielzeit in Dilation. Falls dein laufender Versuch schon länger dauert, beim nächsten geplanten Start mitnehmen. Mit r137 gibt es ×2 DT und generierte TT während Dilation.");
+    add(138, "This is what I have to do to get rid of you.", frei && p.dilationUnlocked && r.dilatedTime >= 3e17,
+      "Vor der nächsten Reality", "Ab etwa 3e17 DT lohnt ein eigener Dilation-Lauf ohne Time Studies: respecen, dilatieren, keine Studies laden und bis e26000 IP pushen. Dafür auch crunchen. Danach den Farm-Tree wieder laden. Belohnung: Die Nachteile von TS131 und TS133 entfallen.");
+
+    const basic = ["power", "infinity", "replication", "time", "dilation"];
+    const aktiv = p.activeGlyphs ?? [];
+    add(148, "Royal flush", frei && basic.every(type => aktiv.some(g => g.type === type)), "Bei der nächsten Reality",
+      "Du trägst alle fünf Basis-Glyph-Typen. Behalte dieses Set bis zum Reality-Reset. Danach erhöhen verschiedene ausgerüstete Glyph-Typen das Glyph-Level.");
+    add(153, 'More like "reallydoesn\'tmatter"', frei && p.realityAvailable && q.noAM === true, "Bei der nächsten Reality",
+      "Diese Reality hat noch kein Antimatter produziert. AD-Autobuyer aus lassen, kein EC7 starten und jetzt Reality auslösen.");
+    add(156, "College Dropout", frei && p.realityAvailable && q.noPurchasedTT === true, "Vor dem nächsten TT-Kauf",
+      "Du hast in dieser Reality keine Time Theorems gekauft und kannst resetten. TT-Autobuyer aus lassen und Reality auslösen. Belohnung: ×2,5 generierte TT.");
+    add(154, "I am speed", frei && p.realityAvailable && Number.isFinite(p.realityGameTimeMs) && p.realityGameTimeMs <= 5000,
+      "Jetzt Reality auslösen", "Beim Speichern lag die Reality innerhalb von 5 Sekunden Spielzeit. Wenn das noch zutrifft, sofort resetten; eine laufende Black Hole kann das Zeitfenster rasch schließen.");
+    const spaet = REIHENFOLGE.indexOf(phase) >= REIHENFOLGE.indexOf("enslaved");
+    add(165, "Perfectly balanced", frei && spaet && p.bestGlyphLevel >= 5000, "Vor der nächsten Reality",
+      "Im Glyph-Level-Faktoren-Menü die Gewichtung mit Reset auf vier gleiche Anteile stellen. Erst Reality auslösen, wenn das angebotene Glyph-Level damit mindestens 5000 ist. Der alte Bestwert genügt nicht. Falls das Level zu niedrig ist, vorherige Gewichtung wiederherstellen. Belohnung: automatische optimale Gewichtung.");
+    add(166, "Nicenice.", frei && spaet && p.bestGlyphLevel >= 6500, "Beim nächsten Glyph-Push",
+      "Reality-Autobuyer pausieren und das angebotene Glyph-Level auf exakt 6969 bringen, nötigenfalls über die Faktor-Gewichtung. Erst bei genau 6969 resetten. Belohnung: +69 Glyph-Level.");
+    return result;
+  }
+
   function planeFuer(profil) {
     const plan = phasenPlan(profil);
     const schritte = plan.schritte.filter(schritt => schritt.id !== KONKRETE_SCHRITTE.ecReload.schrittId);
@@ -2465,7 +2584,10 @@
     if (schritte.length <= MAX_SICHTBAR && schritte.at(-1)?.gruppe === "ruJetztKaufen") {
       schritte[schritte.length - 1] = { ...schritte.at(-1), saveNeuEinlesen: true };
     }
-    return { ...plan, schritte: schritte.slice(0, MAX_SICHTBAR) };
+    const sichtbar = schritte.slice(0, MAX_SICHTBAR);
+    const schonErklaert = new Set(sichtbar.flatMap(s => s.fehlendeAchievements ?? []));
+    return { ...plan, schritte: sichtbar, achievements: achievementHinweise(profil ?? {}, plan.phase)
+      .filter(a => !schonErklaert.has(a.id)) };
   }
 
   function statusFuer(p, phase) {
