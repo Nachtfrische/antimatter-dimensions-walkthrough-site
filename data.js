@@ -2101,9 +2101,9 @@ window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = [
       stages.push({ tt: cost(tree), tree });
     }
   }
-  // PASS: komfortable fruehe EP-Farm ohne TS121-Aufbau und manuelle Active-RGs.
-  // Ab TD+171 bleibt die Push-Route bestehen; PASS ist kein universeller Ersatz.
-  return stages.map(stage => perks.includes(31) && stage.tt < 100
+  // PASS ohne ACT: komfortable Farm ohne TS121-Aufbau und manuelle Active-RGs.
+  // Der Wechsel auf TD+171 aendert den Dimensionspfad, nicht diese Perk-Wahl.
+  return stages.map(stage => perks.includes(31) && !perks.includes(70)
     ? { ...stage, tree: stage.tree.replace(/\b(121|131|141)\b/g, id => Number(id) + 1) }
     : stage).sort((a, b) => a.tt - b.tt);
 };
@@ -2121,6 +2121,7 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   // Die Pin-Strings enthalten einen optionalen dritten Pfad am Ende. Ohne
   // Split diesen ganz weglassen, statt einen stillen Teilimport anzuleiten.
   if (!split && (ep || active)) tree = tree.replace(ep ? ",71,81,91,101|0" : ",72,82,92,102|0", "|0");
+  if (ep && perks.includes(31) && !perks.includes(70)) tree = tree.replace("121,131,141", "122,132,142");
   if (!ep && !active && perks.includes(31)) tree = tree.replace("123,133,143", "122,132,142");
   if (!(clears[4] > 0 || perks.includes(57))) tree = tree.replace(",62,", ",");
   if (cost(tree) <= totalTT) return tree;

@@ -431,7 +431,7 @@
       tree ? "Außerhalb einer Challenge Time Studies respecen, eternitieren und den mit Jetzt bezeichneten EP-Farm-Tree laden."
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
-      ...(hat(p.perks, 31) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree verwenden; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen. Erst beim später angegebenen Active-Tree gelten dessen Handgriffe."] : []),
+      ...(hat(p.perks, 31) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree verwenden; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen."] : []),
       ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal." : "Automatic Eternity auf „Eternity at X EP“ mit 0 stellen, einschalten und zehn kurze Eternities für TS121 abwarten."} Danach Eternity-Autobuyer aus und Replicanti-Galaxien mit R kaufen.${hat(p.achievementIds, 138) ? " r138 automatisiert die Active-RGs." : ""}`] : []),
       ...(studies.has(181) ? ["Ohne TS181 nach vollen Replicanti-Galaxien crunchen. Sobald TS181 im Baum steht: Crunch-Autobuyer ausschalten, Dimboost/Galaxy unbeschränkt auf 0 s, Eternity-Autobuyer für den Push aus."]
         : studies.has(61) ? ["Nach vollen Replicanti-Galaxien crunchen; Eternity-Autobuyer für den abschließenden EP-Push ausschalten."] : []),
@@ -1251,12 +1251,13 @@
     const budget = studyBudget(p);
     // Achievements bleiben über Realities erhalten, Dilation-Fortschritt nicht.
     // Pins: zunächst Idle unter 1 Mio.; Active nach zwei erfolgreichen Läufen.
-    const active = (p.resources?.eternities ?? 0) >= 1_000_000 || (p.recentDilationCompletions ?? 0) >= 2
-      || ((p.resources?.tachyonParticles ?? 0) > 0 && hat(p.studies, 121));
+    const passive = hat(p.perks, 31) && !hat(p.perks, 70);
+    const active = !passive && ((p.resources?.eternities ?? 0) >= 1_000_000 || (p.recentDilationCompletions ?? 0) >= 2
+      || ((p.resources?.tachyonParticles ?? 0) > 0 && hat(p.studies, 121)));
     const optionen = { active, split: p.hasDilationStudySplit };
     const farmBaum = DATEN.planDilationTree(budget, p.clears, p.perks, optionen);
     const epBaum = DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, ep: true });
-    const alternative = !active ? DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, active: true }) : null;
+    const alternative = !active && !passive ? DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, active: true }) : null;
     const activeBaum = alternative?.split("|")[0].split(",").includes("121") ? alternative : null;
     const hinweis = [
       !p.hasDilationStudySplit ? "Ohne Time Study Split lassen die Imports den noch gesperrten dritten Dimensionspfad weg." : "",
