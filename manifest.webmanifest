@@ -1,0 +1,12 @@
+{
+  "name": "Antimatter Dimensions · Interaktiver Wegweiser",
+  "short_name": "AD Wegweiser",
+  "description": "Lies einen Web- oder Steam-Save lokal ein und erhalte bis zu fünf konkrete nächste Schritte.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#12151a",
+  "theme_color": "#12151a",
+  "orientation": "any"
+}

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#12151a">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Lade deinen Antimatter-Dimensions-Save und bekomm die nächsten fünf Schritte für genau deinen Stand - erklärt, nicht nur aufgelistet.">
+    <meta name="application-name" content="AD Walkthrough">
+    <meta property="og:title" content="Antimatter Dimensions · Interaktiver Walkthrough">
+    <meta property="og:description" content="Save laden und die nächsten Schritte spielen. Mit sichtbaren Handgriffen und kopierbaren Bäumen.">
+    <meta property="og:type" content="website">
+    <title>Antimatter Dimensions · Interaktiver Walkthrough</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+    <script src="save.js" defer></script>
+    <script src="data.js" defer></script>
+    <script src="content.js" defer></script>
+    <script src="konzepte.js" defer></script>
+    <script src="plan.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <!--
+    THESIS: Der Save wird zu einer nummerierten Handlungsfolge, die an der nächsten Zäsur
+    endet, statt zu einem Dashboard, das alles gleichzeitig zeigt.
+    OWN-WORLD: Dunkles Instrument. Die Farbe der aktuell erkannten Spielphase färbt die
+    ganze Seite von oben, Originalwerte aus dem Spielcode, mit gemessenen Textvarianten.
+    STORY: Save laden, Phase sehen, fünf Schritte lesen, an der Zäsur anhalten, Save neu laden.
+    FIRST VIEWPORT: Kopfzeile, Phasenname in Phasenfarbe, dann die Schrittfolge als
+    nummerierte Kette in voller Lesebreite. Kein Raster, keine Spalten.
+    FORM: Nummerierte Handlungskette; die Reihenfolge trägt hier echte Information.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+    -->
+    <a class="sprungmarke" href="#inhalt">Zum Inhalt springen</a>
+
+    <header class="kopf">
+      <div class="schale kopf-innen">
+        <p class="marke"><b>Antimatter Dimensions</b> <span>Interaktiver Walkthrough</span></p>
+        <button class="kopf-knopf" id="save-neu" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.8 4.2M4 12A8 8 0 0 1 18.8 7.8"/><path d="m5 19 .2-2.8L8 16M19 5l-.2 2.8L16 8"/></svg>
+          Save neu laden
+        </button>
+      </div>
+    </header>
+
+    <nav class="navigation" id="navigation" aria-label="Bereiche" hidden>
+      <div class="schale navigation-innen" role="tablist">
+        <button class="reiter" role="tab" type="button" aria-selected="true" aria-controls="tafel-plan" id="reiter-plan" data-ansicht="plan">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h9M5 18h6"/><path d="m16 15 3 3-3 3"/></svg>
+          Dein Plan
+        </button>
+        <button class="reiter" role="tab" type="button" aria-selected="false" aria-controls="tafel-konzepte" id="reiter-konzepte" data-ansicht="konzepte">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>
+          Verstehen
+        </button>
+        <button class="reiter" role="tab" type="button" aria-selected="false" aria-controls="tafel-runs" id="reiter-runs" data-ansicht="runs" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h12M6 12h12M6 19h12"/><path d="M3 5h.01M3 12h.01M3 19h.01"/></svg>
+          EC-Runs
+        </button>
+      </div>
+    </nav>
+
+    <main id="inhalt" class="schale haupt">
+
+      <!-- Dein Plan -->
+      <section class="tafel" id="tafel-plan" role="tabpanel" aria-labelledby="reiter-plan">
+
+        <div class="einstieg" id="einstieg">
+          <h2>Save laden</h2>
+          <p>
+            Exportier deinen Spielstand im Spiel unter Optionen und füg ihn hier ein. Du
+            bekommst danach die nächsten fünf Schritte für genau deinen Stand. Der Save
+            bleibt in deinem Browser und wird weder hochgeladen noch gespeichert.
+          </p>
+
+          <label class="feldname" for="save-text">Export als Text einfügen</label>
+          <textarea id="save-text" class="save-feld" rows="4" maxlength="4000000"
+            autocomplete="off" autocapitalize="off" spellcheck="false"
+            placeholder="AntimatterDimensionsSavefileFormatAAB..."></textarea>
+
+          <div class="knopfreihe">
+            <button class="knopf knopf-haupt" id="save-pruefen" type="button">Save auswerten</button>
+            <span class="tastenkuerzel">oder Strg + Enter</span>
+          </div>
+
+          <p class="trenner"><span>oder als Datei</span></p>
+
+          <label class="feldname" for="save-datei">Export-Datei auswählen</label>
+          <input id="save-datei" class="datei-feld" type="file" accept=".txt,.json,text/plain,application/json">
+
+          <p class="meldung" id="save-meldung" role="status" aria-live="polite"></p>
+          <p class="hinweis-klein">Unterstützt werden Web- und Steam-Saves bis 4 MB. Saves aus den mobilen Apps haben ein anderes Format und funktionieren hier nicht.</p>
+        </div>
+
+        <div id="plan-bereich" hidden>
+          <div class="phasenkopf">
+            <h2 id="phasen-titel"></h2>
+            <p id="phasen-einleitung"></p>
+            <button class="knopf-schlicht kontext-knopf" id="kontext-kopieren" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+              Kontext für eine Rückfrage kopieren
+            </button>
+            <p class="hinweis-klein" id="kontext-erklaerung">Kopiert deinen Stand und diese Schritte als kurzen Text. Den kannst du in einen Chat einfügen und dort frei nachfragen. Dein Save bleibt hier.</p>
+          </div>
+
+          <div class="hinweis-block" id="hinweis-block" hidden>
+            <p><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="hinweis-titel">Gut zu wissen</span></p>
+            <ul class="hinweise" id="hinweise"></ul>
+          </div>
+
+          <ol class="schrittfolge" id="schrittfolge"></ol>
+
+        </div>
+      </section>
+
+      <!-- Verstehen -->
+      <section class="tafel" id="tafel-konzepte" role="tabpanel" aria-labelledby="reiter-konzepte" hidden>
+        <div id="konzept-uebersicht">
+          <div class="seitenkopf">
+            <h2>Verstehen, statt nur folgen</h2>
+            <p>
+              Die Schritte sagen dir, was zu tun ist. Hier steht, warum es funktioniert.
+              Es erscheinen nur Seiten zu Mechaniken, die dein Save bereits erreicht hat.
+            </p>
+          </div>
+          <ul class="konzept-liste" id="konzept-liste"></ul>
+          <p class="leer" id="konzept-leer" hidden>Lade zuerst einen Save, dann erscheinen hier die passenden Erklärungen.</p>
+        </div>
+
+        <article class="konzept" id="konzept-einzeln" hidden>
+          <button class="knopf-schlicht" id="konzept-zurueck" type="button">Zurück zur Übersicht</button>
+          <h2 id="konzept-titel"></h2>
+          <p class="einleitung" id="konzept-kurzfassung"></p>
+          <div id="konzept-abschnitte"></div>
+        </article>
+      </section>
+
+      <!-- EC-Runs -->
+      <section class="tafel" id="tafel-runs" role="tabpanel" aria-labelledby="reiter-runs" hidden>
+        <div class="seitenkopf">
+          <h2>Die EC-Route</h2>
+          <p>
+            Alle sechzig Läufe in der erprobten Reihenfolge, mit Richtwert an Time Theorems,
+            Freischaltbedingung und den beiden Bäumen zum Kopieren.
+          </p>
+        </div>
+        <div class="karten" id="run-liste"></div>
+      </section>
+
+    </main>
+
+    <footer class="fuss">
+      <div class="schale fuss-innen">
+        <p>Für Web- und Steam-Saves. Die Auswertung passiert vollständig auf deinem Gerät.</p>
+      </div>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <noscript><p class="noscript">Diese Seite braucht JavaScript, um deinen Save auszuwerten.</p></noscript>
+  </body>
+</html>
