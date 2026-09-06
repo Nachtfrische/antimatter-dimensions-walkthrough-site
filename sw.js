@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "ad-ec-guide-";
-const CACHE_NAME = `${CACHE_PREFIX}v47`;
+const CACHE_NAME = `${CACHE_PREFIX}v48`;
 const APP_ASSETS = ["./", "./index.html", "./styles.css", "./save.js", "./data.js", "./content.js", "./konzepte.js", "./plan.js", "./app.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {

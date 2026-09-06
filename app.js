@@ -41,6 +41,7 @@
 
   let profil = null;
   let aktuellerPlan = null;
+  let importiertAm = null;
 
   /* ---------------- Werkzeug ---------------- */
 
@@ -234,13 +235,14 @@
   }
 
   /* Der Kontextblock ist der Weg zu einer freien Rueckfrage in einem Chat:
-     kurzer Text statt Save-Export, mit den Zahlen aus dem geprueften Parser. */
+     eigenständige Übergabe mit Parserdaten, vollständigen Schritten und Quellen. */
   function kontextText() {
     if (!profil || !aktuellerPlan) return "";
     return INHALT.kontextFuer(profil, aktuellerPlan, {
       status: PLAN.statusFuer(profil, aktuellerPlan.phase),
       ruName: PLAN.ruName,
       perkName: PLAN.perkName,
+      importiertAm,
     });
   }
 
@@ -431,6 +433,8 @@
     setzeMeldung("Wird ausgewertet ...");
     try {
       profil = await ANALYZER.analyze(text.trim());
+      importiertAm = new Date().toISOString();
+      aktuellerPlan = null;
     } catch (fehler) {
       if (!fehler?.code) console.error("Spielstand konnte nicht ausgewertet werden.", fehler);
       setzeMeldung(FEHLERTEXT[fehler?.code] ?? FEHLERTEXT.invalid, "fehler");
@@ -470,6 +474,7 @@
     knoten.saveNeu.addEventListener("click", () => {
       profil = null;
       aktuellerPlan = null;
+      importiertAm = null;
       knoten.einstieg.hidden = false;
       knoten.planBereich.hidden = true;
       knoten.navigation.hidden = true;

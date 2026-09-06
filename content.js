@@ -1212,24 +1212,134 @@
   }
 
   /* ---------------- Kontextblock für eine Rückfrage ----------------
-     Fasst Profil und Plan als kurzen Text zusammen, den man in einen Chat
-     einfügen kann. Bewusst nur ausgewertete Werte und nie der Export selbst:
-     der Block soll in ein Chatfenster passen und keinen Spielstand weitergeben.
-     Aufgenommen wird nur, was der Save tatsächlich hergibt — dadurch bleibt ein
-     früher Stand kurz und der Block verrät keine späteren Spielphasen. */
+     Eigenständige Übergabe: Parserdaten, vollständiger Plan, Erklärungen und
+     Quellverweise. Nur benannte Profilfelder kopieren, niemals den Rohsave.
+     Hintergrund und Diagnosedaten beachten dieselbe Phasensperre wie die UI. */
 
   const KONTEXT_KOPF = [
     "# Antimatter Dimensions – mein Spielstand",
     "",
-    "Die folgenden Werte stammen aus meinem Save. Sie wurden lokal von einem Parser",
-    "ausgelesen. Schätzwerte sind gekennzeichnet. Prüfe den vorgeschlagenen Plan anhand",
-    "der Spielregeln und deiner Quellen; benenne Widersprüche oder fehlende Angaben.",
-    "Der Save selbst ist hier nicht enthalten.",
+    "Ich spiele Antimatter Dimensions (Web/Steam). Dies ist die Übergabe meines lokalen Walkthroughs an einen neuen Chat ohne bisherigen Gesprächsverlauf. Meine Frage steht am Ende und bestimmt, wobei du mir helfen sollst.",
+    "Antworte auf Deutsch, mit den sichtbaren Spielnamen. Nutze meinen tatsächlichen Stand: konkrete Handgriffe in sinnvoller Reihenfolge, passende kopierbare Trees, nötige Wechsel/Respecs und klare Ziele. Bei einer Frage zum weiteren Vorgehen genügen zunächst höchstens fünf nächste Schritte.",
+    "Die Parserdaten sind eine Momentaufnahme; der Plan und die Erklärungen sind Empfehlungen eines regelbasierten Guides. Prüfe sie anhand der Spielregeln und deiner Quellen, benenne Widersprüche und trenne Voraussetzungen von optionalen Hilfen. Bereits erledigte Schritte nicht erneut verlangen. Spätere Spielphasen nur erklären, wenn meine Frage das erfordert.",
+    "Der Save selbst und frühere Chats sind hier nicht enthalten. Seit dem Import kann ich weitergespielt haben. Frage nur nach entscheidenden fehlenden Angaben; erfinde keine Einstellungen, bisherigen Versuche oder gemessenen Wartezeiten.",
   ];
+
+  const felderAus = (objekt, felder) => Object.fromEntries(felder.split(/\s+/)
+    .filter(feld => feld && objekt?.[feld] !== undefined).map(feld => [feld, objekt[feld]]));
+
+  function kontextDetails(p, phase) {
+    const reihenfolge = window.AD_PLAN?.REIHENFOLGE ?? Object.keys(PHASEN);
+    const erreicht = name => reihenfolge.indexOf(name) <= reihenfolge.indexOf(phase);
+    const r = p.resources ?? {};
+    const daten = {
+      basis: felderAus(p, "platform version legacySave achievementIds dimensionBoosts galaxies eighthDimensionAmount eighthDimensionBought"),
+      ressourcen: felderAus(r, "antimatterExponent maxAntimatterExponent"),
+    };
+    if (erreicht("infinity")) {
+      daten.infinity = felderAus(p, `infinityUnlocked normalChallenges infinityChallenges infinityChallengesUnlocked
+        breakInfinity breakInfinityReady bigCrunchInterval ipMultPurchases infinityUpgrades infinityRebuyables
+        infinityDimensionsUnlocked infinityPowerExponent replicantiUnlocked replicantiGalaxies replicantiGalaxyCap`);
+      daten.challenges = felderAus(p.currentChallenge, "normal infinity");
+      Object.assign(daten.ressourcen, felderAus(r, "infinityPoints infinityPointsExponent maxInfinityPointsExponent infinities"));
+    }
+    if (erreicht("earlyEternity")) {
+      daten.eternity = felderAus(p, `eternityUnlocked totalTT unspentTT studies clears timeDimensionsUnlocked
+        eternityUpgradeCount epMultUpgrades totalTickGained currentEternityRealSeconds currentRun`);
+      daten.challenges = felderAus(p.currentChallenge, "normal infinity eternity eternityUnlocked requirementBits");
+      Object.assign(daten.ressourcen, felderAus(r, `eternityPoints eternityPointsExponent maxEternityPointsExponent
+        eternities bankedInfinities maxReplicantiExponent`));
+    }
+    if (erreicht("dilation")) {
+      daten.dilation = felderAus(p, `dilationUnlocked dilationActive dilationStudies dilationUpgrades dilationRebuyables
+        recentDilationCompletions realityStudyBought realityAvailable`);
+      Object.assign(daten.ressourcen, felderAus(r, "tachyonParticles dilatedTime dilatedTimeLog10 maxDilatedTimeExponent"));
+    }
+    if (erreicht("reality")) {
+      daten.reality = felderAus(p, `reality realities realityUpgrades realityUpgradeUnlocks realityRequirementLocks
+        realityRebuyables perks perkPoints autoAchievementsEnabled gainedAutoAchievements realityGameTimeMs currentRun`);
+      daten.bedingungen = felderAus(p.requirementChecks, "noEternities noInfinities noRG noAD8 maxGlyphs slowestBlackHole");
+      daten.glyphs = felderAus(p, `activeGlyphs inventoryGlyphs glyphRespecEnabled glyphSacrificeLog10 bestGlyphLevel bestGlyphRarity`);
+      daten.prognosen = felderAus(p, "gainedRMEstimate gainedRMIsEstimate pendingGlyphLevel upcomingGlyphs");
+      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorMode");
+      daten.blackHoles = felderAus(p, "blackHoles blackHolePaused gameTimeSinceBlackHoleMs");
+      Object.assign(daten.ressourcen, felderAus(r, "realityMachines realityMachinesLog10 maxRealityMachines"));
+    }
+    if (erreicht("teresa")) {
+      daten.celestials = { current: p.celestials?.current ?? null };
+      for (const name of ["teresa", "effarig", "enslaved", "v", "ra", "laitela", "pelle"]) {
+        if (erreicht(name) && p.celestials?.[name]) daten.celestials[name] = p.celestials[name];
+      }
+    }
+    if (erreicht("ra")) daten.alchemy = felderAus(p, "alchemyAtCapCount");
+    if (erreicht("imaginaryMachines")) {
+      daten.imaginary = felderAus(p, "imaginaryUpgrades imaginaryUpgradeUnlocks imaginaryRequirementLocks imaginaryRebuyables continuumDisabled");
+      Object.assign(daten.bedingungen, felderAus(p.requirementChecks, "noContinuum"));
+      Object.assign(daten.ressourcen, felderAus(r, "imaginaryMachines imaginaryMachineCap"));
+    }
+    if (erreicht("complete")) daten.abschluss = felderAus(p, "isGameEnd fullGameCompletions");
+    // Nicht-endliche Exponenten sind fehlende/Null-Ressourcen, kein JSON-null
+    // ohne Erklärung. Endliche Log10-Werte bleiben ohne Rundung erhalten.
+    return JSON.stringify(daten, (_, wert) => typeof wert === "number" && !Number.isFinite(wert) ? null : wert, 2);
+  }
+
+  function kontextHintergrund(plan) {
+    const reihenfolge = window.AD_PLAN?.REIHENFOLGE ?? Object.keys(PHASEN);
+    const rang = name => reihenfolge.indexOf(name);
+    const jetzt = rang(plan.phase);
+    const teile = [];
+    const konzepte = Object.values(window.AD_KONZEPTE ?? {})
+      .filter(konzept => rang(konzept.abPhase) >= 0 && rang(konzept.abPhase) <= jetzt);
+    if (konzepte.length) {
+      teile.push("", "## Hintergrund aus dem Walkthrough", "Diese Erklärungen gelten für bereits erreichte Phasen. Sie sind Guide-Inhalte, keine unabhängig geprüften Originalquellen und keine zusätzlichen Aufgaben.");
+      for (const konzept of konzepte) {
+        teile.push("", `### ${konzept.titel}`, konzept.kurzfassung);
+        for (const abschnitt of konzept.abschnitte ?? []) {
+          teile.push(`${abschnitt.ueberschrift}: ${abschnitt.text ?? ""}`);
+          if (abschnitt.tabelle) {
+            teile.push(abschnitt.tabelle.kopf.join(" | "));
+            for (const zeile of abschnitt.tabelle.zeilen) teile.push(zeile.join(" | "));
+          }
+        }
+      }
+    }
+    const daten = window.EC_GUIDE_DATA;
+    const laeufe = new Set((plan.schritte ?? []).map(s => s.werte?.run).filter(Boolean));
+    const referenzen = (daten?.route ?? []).filter(lauf => laeufe.has(lauf.run));
+    if (referenzen.length) {
+      teile.push("", "## Tabellenhintergrund zu den vorgeschlagenen EC-Läufen",
+        "Basisroute ohne individuelle Boni: TT-Marken sind Richtwerte. Perks, gespeicherte Bedingungen und der aktuelle Save können die Planung verändern. Die tatsächlich vorgeschlagenen Trees stehen oben beim jeweiligen Schritt.");
+      for (const lauf of referenzen) {
+        teile.push(`${lauf.run}: Richtwert ${lauf.readyTT} TT; Baum ${lauf.treeTT} TT + Knoten ${lauf.nodeTT} TT; Aufbau ${lauf.setup}; Freischaltbedingung ${lauf.unlock}; Laufziel ${lauf.goal}. ${lauf.tip}`);
+      }
+    }
+    teile.push("", "## Quellen und Prüfgrenzen",
+      "Mitkopiert sind die oben stehenden Guide-Texte und Parserdaten. Die vollständigen Discord-Pins, Arbeitsmappen und der Spielcode sind NICHT eingebettet. Ein Quellenlink bedeutet nicht, dass du seinen Inhalt bereits gelesen hast.",
+      "Die lokale Quellenbasis des Projekts liegt in MehrBackgroundInfo/DiscordPins_Und_Tipps.txt. Bei Zugriff auf dieses Projekt dort die passenden Abschnitte prüfen; in einem fremden Chat keinen Zugriff auf lokale Dateien voraussetzen.");
+    if (jetzt >= rang("eternityChallenges")) teile.push("Weitere lokale Quellen: Antimatter Dimensions - Eternity and Eternity Challenges.xlsx; ANTIMATTER DIMENSIONS_ EC TREES VISUALIZED.xlsx.");
+    if (jetzt >= rang("pelle")) teile.push("Lokale Quelle für diese Phase: Cel-7 Eternity Guide.xlsx.");
+    const quellen = [
+      ["preInfinity", "officialSource", "Offizieller Spielcode, festgelegter Referenz-Commit"],
+      ["earlyEternity", "normalStudies", "Time-Study-Kosten und Regeln"],
+      ["eternityChallenges", "ecStudies", "EC-Freischaltbedingungen"],
+      ["eternityChallenges", "challenges", "EC-Regeln und Ziele"],
+      ["eternityChallenges", "planner", "Öffentliche EC-Arbeitsmappe"],
+      ["dilation", "dilationUpgrades", "Dilation-Upgrades"],
+      ["reality", "realityUpgrades", "Reality-Upgrades und Bedingungen"],
+      ["reality", "glyphEffects", "Glyph-Effekte"],
+      ["imaginaryMachines", "imaginaryUpgrades", "Imaginary-Upgrades"],
+    ];
+    for (const [phase, id, titel] of quellen) {
+      if (jetzt >= rang(phase) && daten?.sources?.[id]) teile.push(`- ${titel}: ${daten.sources[id]}`);
+    }
+    teile.push("Prüfe Kosten, Bedingungen und Formeln am Spielcode; Strategie an passenden Guides. Der verlinkte Commit ist ein reproduzierbarer Referenzstand, keine Behauptung zur neuesten Spielversion. Eine einzelne Momentaufnahme und bestandene Guide-Tests simulieren weder Produktion noch Restzeiten.");
+    return teile;
+  }
 
   function kontextFuer(profil, plan, extras = {}) {
     if (!profil || !plan) return "";
-    const { status = "", ruName = id => `RU${id}`, perkName = id => `Perk ${id}` } = extras;
+    const { status = "", ruName = window.AD_PLAN?.ruName ?? (id => `Upgrade ${id}`),
+      perkName = window.AD_PLAN?.perkName ?? (id => `Perk ${id}`), importiertAm = null } = extras;
     const r = profil.resources ?? {};
     const zeilen = [];
     const zeile = (name, wert) => {
@@ -1271,7 +1381,7 @@
       profil.currentChallenge?.infinity ? `IC${profil.currentChallenge.infinity}` : null,
       profil.currentChallenge?.eternity ? `EC${profil.currentChallenge.eternity}` : null,
     ].filter(Boolean);
-    zeile("Laufende Challenge", liste(laufend));
+    zeile("Laufende Challenge", liste(laufend) ?? "keine");
     if (profil.eternityUnlocked) {
       zeile("Time Dimensions", `${profil.timeDimensionsUnlocked ?? 0}/8`);
       const clears = profil.clears ?? [];
@@ -1292,20 +1402,23 @@
     if ((profil.realities ?? 0) > 0) {
       zeile("Reality Machines", `${r.realityMachinesLog10 > 308 ? exp(r.realityMachinesLog10) : zahl(r.realityMachines)} auf Lager, ${profil.gainedRMIsEstimate ? "Basis-Schätzung" : "ausgelesener Gewinn"} ${zahl(profil.gainedRMEstimate)} beim nächsten Reset`);
       zeile("Perk-Punkte", zahl(profil.perkPoints));
-      zeile("Gekaufte Perks", liste((profil.perks ?? []).filter(id => id !== 0).map(perkName)));
+      zeile("Gekaufte Perks", liste((profil.perks ?? []).map(perkName)) ?? "keine");
       const offeneRu = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
         .filter(id => !(profil.realityUpgrades ?? []).includes(id));
-      // Die naechsten acht reichen; eine Liste aller neunzehn waere nur Rauschen.
-      const naechsteRu = offeneRu.slice(0, 8).map(id => ruName(id)).join(", ")
-        + (offeneRu.length > 8 ? ` und ${offeneRu.length - 8} weitere` : "");
-      zeile("Reality-Upgrades", `${profil.realityUpgrades?.length ?? 0}/20 gekauft`
-        + (offeneRu.length ? `; als Nächstes offen: ${naechsteRu}` : ""));
+      const gekauft = (profil.realityUpgrades ?? []).filter(id => id >= 6);
+      zeile("Reality-Upgrades", `${gekauft.length}/20 einmalige Upgrades gekauft`);
+      zeile("Bereits gekaufte Reality-Upgrades", liste(gekauft.map(ruName)) ?? "keine");
+      zeile("Bedingung erfüllt, noch nicht gekauft", liste((profil.realityUpgradeUnlocks ?? [])
+        .filter(id => id >= 6 && !gekauft.includes(id)).map(ruName)) ?? "keine");
+      zeile("Aktive Requirement Locks (kein Kauf)", liste((profil.realityRequirementLocks ?? []).map(ruName)) ?? "keine");
+      zeile("Noch nicht gekaufte Reality-Upgrades (keine Kaufreihenfolge)", liste(offeneRu.map(ruName)) ?? "keine");
       const glyphen = (profil.activeGlyphs ?? []).filter(glyph => glyph.type !== "companion");
       if (glyphen.length) {
         zeile("Ausgerüstete Glyphs", glyphen
           .map(glyph => `${gross(glyph.type)} Level ${glyph.level} (${(glyph.effectIds ?? []).join(" + ") || "kein Effekt"})`)
           .join("; "));
-      }
+      } else zeile("Ausgerüstete Glyphs", "keine spielwirksamen Glyphs");
+      zeile("Glyph-Inventar", `${profil.inventoryGlyphs?.length ?? 0} Glyphs; alle Einzelwerte im Diagnoseblock`);
     }
     if (profil.imaginaryUpgrades?.length || (r.imaginaryMachines ?? 0) > 0) {
       zeile("Imaginary Machines", `${zahl(r.imaginaryMachines)} von ${zahl(r.imaginaryMachineCap)} Limit, ${profil.imaginaryUpgrades?.length ?? 0} Upgrades`);
@@ -1316,6 +1429,8 @@
       if (!text) return null;
       const teile = [`${index + 1}. ${text.kurz}`];
       for (const handgriff of text.soGehts ?? []) teile.push(`   - ${handgriff}`);
+      if (text.warum) teile.push(`   Warum: ${text.warum}`);
+      if (text.falle) teile.push(`   Stolperfalle: ${text.falle}`);
       if (schritt.hinweis) teile.push(`   Hinweis: ${schritt.hinweis}`);
       if (text.communityZeit) teile.push(`   Community-Zeit: ${text.communityZeit}`);
       if (text.fertigWenn) teile.push(`   Fertig, wenn: ${text.fertigWenn}`);
@@ -1332,12 +1447,32 @@
     return [
       ...KONTEXT_KOPF,
       "",
+      "## Einordnung dieser Momentaufnahme",
+      "Kontextformat: 2; erstellt am " + new Date().toISOString() + " (UTC).",
+      `Im Walkthrough importiert am: ${importiertAm ?? "nicht erfasst"}. Das ist nicht die Speicherzeit im Spiel.`,
+      "Grundlage: lokal ausgewerteter PC-Save, regelbasierter Plan; keine Live-Verbindung zum Spiel.",
+      "",
       "## Stand",
       ...zeilen,
       "",
       "## Was mein Walkthrough als Nächstes vorschlägt",
       ...(schritte.length ? schritte : ["(keine Schritte)"]),
       ...(offeneHinweise.length ? ["", "## In dieser Reality nicht mehr erreichbar", ...offeneHinweise] : []),
+      "",
+      "## Ausführliche Parserdaten zur Diagnose",
+      "Interne Feldnamen bleiben hier erhalten, damit Werte eindeutig zuzuordnen sind. Fehlende Felder bedeuten unbekannt/nicht erfasst. Bei alten oder unvollständigen Saves können 0, false und leere Listen auch Parser-Standardwerte sein; sie beweisen dann keinen gemessenen Zustand.",
+      "Felder mit Exponent sind Größenordnungen zur Basis 10, Felder mit Log10 enthalten den genaueren Logarithmus. null bedeutet kein nutzbarer Zahlenwert (auch bei einer Null-Ressource). Endliche Ressourcenwerte können bei Number.MAX_VALUE (ca. 1,798e308) gekappt sein; vorhandene Log10-/Exponent-Werte bevorzugen. Felder mit Ms sind Millisekunden, Seconds Sekunden; Realzeit und Spielzeit unterscheiden.",
+      ...(profil.eternityUnlocked ? ["clears enthält EC1 bis EC12 in dieser Reihenfolge. studies sind die aktuell gekauften Studies. requirementBits speichert EC-Ressourcenbedingungen, Bit (1 << EC-Nummer); eternityUnlocked bezeichnet den gekauften EC-Knoten, eternity die laufende EC. Gekauft, Bedingung gespeichert und Challenge aktiv sind verschiedene Zustände."] : []),
+      ...((profil.realities ?? 0) > 0 ? [
+        "realities zählt abgeschlossene Realities, reality die laufende Nummer. currentRun beschreibt tatsächlich gespielte Resets in dieser Reality; geschenkte Eternities allein beweisen keinen gespielten Reset. noInfinities/noEternities gelten für diese Reality, noRG für diese Eternity und noAD8 für diese Infinity.",
+        "realityUpgrades = gekauft; realityUpgradeUnlocks = Bedingung erfüllt; realityRequirementLocks = aktivierter Schutz. IDs 6–25 sind einmalige Upgrades, realityRebuyables enthält die fünf wiederholbaren Käufe. In der Antwort Namen mit Reihe/Spalte verwenden und den sichtbaren Cost:-Zustand beachten.",
+        "activeGlyphs und inventoryGlyphs enthalten die ausgelesenen Glyphs samt Effekten, Level und Seltenheit. prognosen enthält berechnete RM-/Glyph-Vorschauen, keine garantierten Gewinne; bei null oder leeren upcomingGlyphs ist keine Vorschau verfügbar. Der tatsächliche Knopf im Spiel ist für den Reset-Ertrag maßgeblich.",
+        "Autobuyer-Einstellungen und Automator-Skriptinhalte sind nicht vollständig erfasst. automatorMode ist ein interner Moduswert. recentDilationCompletions zählt nur erfolgreiche Dilation-Läufe unter den letzten zehn Eternities dieser Reality, nicht alle jemals gespielten Läufe.",
+      ] : []),
+      "```json",
+      kontextDetails(profil, plan.phase),
+      "```",
+      ...kontextHintergrund(plan),
       "",
       "## Meine Frage",
       "",
