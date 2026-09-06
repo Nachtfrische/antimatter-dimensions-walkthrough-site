@@ -413,6 +413,14 @@
   function epFarmAufbau(p, zielTT) {
     const budget = studyBudget(p);
     const tree = DATEN.planFarmTree(null, budget, p.clears, p.perks);
+    const jetztStudies = new Set(tree?.split("|")[0].split(",").map(Number) ?? []);
+    const pfadNamen = { 71: "Antimatter Dimensions", 72: "Infinity Dimensions", 73: "Time Dimensions",
+      121: "Active", 122: "Passive", 123: "Idle" };
+    const pfadWechsel = [[71, 72, 73], [121, 122, 123]].flatMap(ids => {
+      const alt = ids.find(id => hat(p.studies, id));
+      const neu = ids.find(id => jetztStudies.has(id));
+      return alt && neu && alt !== neu ? [`${pfadNamen[alt]} → ${pfadNamen[neu]}`] : [];
+    });
     const baeume = tree ? [{ bezeichnung: `Jetzt: EP-Farm-Tree · ${baumKosten(tree)} TT`, importString: tree }] : [];
     const upgrades = DATEN.epFarmStages(p.clears, p.perks).filter(stage => stage.tt > budget && stage.tt <= zielTT);
     // Gleich teure Varianten sind dieselbe Etappe, zuletzt steht die bevorzugte.
@@ -428,6 +436,7 @@
       ? `${peak} EP als Startwert (gespeicherter EP/min-Peak)`
       : "EP-Betrag hinter „Peak … at … EP“ am Eternity-Knopf eintragen"}. „Dynamic amount“ und Time-Study-Respec ausschalten, Eternity-Autobuyer einschalten. Bei ${zahl(zielTT)} TT stoppen und den Save neu einlesen. Nach Käufen oder Tree-Wechsel den Peak neu ablesen; für längere Pushes den Autobuyer ausschalten.` : null;
     return { baeume, soGehts: [
+      ...(pfadWechsel.length ? [`Dein gespeicherter Studienpfad muss für diese EP-Farm gewechselt werden: ${pfadWechsel.join("; ")}. Den Wechsel mit dem folgenden Respec durchführen.`] : []),
       tree ? "Außerhalb einer Challenge Time Studies respecen, eternitieren und den mit Jetzt bezeichneten EP-Farm-Tree laden."
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
@@ -509,7 +518,7 @@
       ergebnis ??= teil;
       schritte.push(...teil.schritte);
       const laufSchritt = teil.schritte.find(s => s.gruppe === "ecRun");
-      if (!laufSchritt || hat(p.perks, 73)) break;
+      if (!laufSchritt || hat(p.perks, 73) || ec1FuerUpgradeOffen(p)) break;
       const lauf = DATEN.route.find(r => r.run === laufSchritt.werte.run);
       // This is an ordered route, not a simulated production forecast. Only
       // apply the completion and TT target the preceding steps explicitly ask for.
@@ -517,6 +526,12 @@
         currentChallenge: { requirementBits: (stand.currentChallenge?.requirementBits ?? 0) & ~(1 << lauf.ec) },
         resources: { ...stand.resources }, vorschau: true };
       stand.clears[lauf.ec - 1] = lauf.tier;
+    }
+    if (ec1FuerUpgradeOffen(p)) {
+      const erster = schritte.find(s => s.gruppe !== "ecRequirementSchutz");
+      if (erster) erster.hinweis = [erster.hinweis,
+        "e70 EP für The Knowing Existence (Reihe 3, Spalte 2) bleibt das spätere Ziel. Jetzt die folgenden TT-/EC-Schritte spielen; ihre Belohnungen helfen beim EP-Push. Nur EC1 bleibt bis zur erfüllten Bedingung gesperrt. Nach diesem EC-Abschluss den Save neu einlesen. Sobald du nach einer Eternity mindestens e70 EP besitzt, beim Upgrade ohne Shift auf Cost: prüfen; danach ist EC1 erlaubt.",
+      ].filter(Boolean).join(" ");
     }
     return { ...ergebnis, schritte: schritte.slice(0, MAX_SICHTBAR) };
   }
@@ -1472,8 +1487,8 @@
     }
     const epZiel = !p.dilationUnlocked && epStand < 70
       && !p.currentChallenge?.eternity && hat(p.realityUpgrades, 8) && hat(p.realityUpgrades, 10)
-      ? ["ru15", "ru12"].map(id => ZIELE.find(z => z.id === id))
-        .find(z => !z.istErledigt(p) && z.istNochMoeglich(p) && (z.id === "ru15" || tt < 130)) : null;
+      ? [ZIELE.find(z => z.id === "ru15")]
+        .find(z => !z.istErledigt(p) && z.istNochMoeglich(p)) : null;
     if (epStand < 4000) {
       schritte.push(...zieleAuswerten(p, "reality", [
         "realityRequirements", ...(epZiel ? [] : ["realityEpSchwellen"]), "realityGlyphSchwelle",
@@ -1481,8 +1496,8 @@
     }
 
     if (epZiel) {
-      const id = Number(epZiel.id.slice(2));
-      const zielEP = id === 15 ? 10 : 70;
+      const id = 15;
+      const zielEP = 10;
       const schutz = [15,12].filter(n => {
         const z = ZIELE.find(z => z.id === `ru${n}`);
         return !z.istErledigt(p) && z.istNochMoeglich(p) && !hat(p.realityRequirementLocks, n);
@@ -1494,12 +1509,10 @@
         ...(schutz.length ? [`Jetzt unter Reality → Upgrades mit Shift-Klick die offenen Schlösser bei ${schutz.map(n => ruName(n, true)).join("; ")} schließen. Bereits geschlossene Schlösser nicht erneut anklicken.`] : []),
         ...(!(p.timeDimensionsUnlocked > 0) ? ["Mit den jetzt vorhandenen EP zuerst TD1 kaufen; weitere bezahlbare TD1–4 mitkaufen."] : []),
         ...aufbau.soGehts.filter(t => !t.startsWith("Time Dimensions und ×5 EP")),
-        id === 15 ? "TD1–4 und AM-/IP-/EP-Theorems weiterkaufen. Multiply Eternity Points by 5 und dessen Autobuyer bleiben aus. Wenn du jetzt schon e10 EP erhältst, kannst du direkt eternitieren."
-          : "TD1–4, Multiply Eternity Points by 5 und AM-/IP-/EP-Theorems weiterkaufen. EC1 bleibt bis zum Ziel ungespielt; dafür nicht der normalen EC1-Route folgen.",
+        "TD1–4 und AM-/IP-/EP-Theorems weiterkaufen. Multiply Eternity Points by 5 und dessen Autobuyer bleiben aus. Wenn du jetzt schon e10 EP erhältst, kannst du direkt eternitieren.",
         ...((p.resources?.eternities ?? 0) >= 100 ? [`Für den abschließenden Ziel-Lauf: „Eternity at X EP“ mit e${zielEP}, „Dynamic amount“ aus, Eternity-Autobuyer an. Bis zum Reset warten; TD1–4 und Theorems weiterkaufen. Das Ziel meint EP-Gewinn pro Reset. Stockt der Lauf vorher, kleinere EP-Gewinne manuell einsammeln und weiter ausbauen.`] : []),
         `Wiederholt EP einsammeln und den Baum ausbauen, bis du nach einer Eternity mindestens e${zielEP} EP besitzt. Falls eine TT-Marke vorher erreicht ist, den Save für den nächsten Baum neu einlesen; die EP-Bedingung bleibt das Ziel.`,
-        `Nach der Eternity unter Reality → Upgrades bei ${ruName(id, true)} ohne Shift auf Cost: prüfen. ${id === 15 ? "Danach ×5-EP-Käufe und ihren Autobuyer einschalten. Die 50 RM für diesen Upgrade-Kauf vorerst zurückhalten: Zuerst The Knowing Existence und Linguistically Expand finanzieren."
-          : `Danach ist EC1 erlaubt. ${p.resources?.realityMachines >= 50 ? "The Knowing Existence jetzt für 50 RM kaufen; " + zahl(p.resources.realityMachines - 50) + " RM bleiben." : "Die Bedingung bleibt gespeichert; der Kauf kostet 50 RM."}`}`,
+        `Nach der Eternity unter Reality → Upgrades bei ${ruName(id, true)} ohne Shift auf Cost: prüfen. Danach ×5-EP-Käufe und ihren Autobuyer einschalten. Die 50 RM für diesen Upgrade-Kauf vorerst zurückhalten: Zuerst The Knowing Existence und Linguistically Expand finanzieren.`,
       ];
       const farm = aktion("eternityNaechstenCheckpointFarmen", "realityEpFarm",
         `Nächstes EP-Ziel: e${zielEP} EP für ${ruName(id)}.`, handgriffe,
@@ -1518,7 +1531,7 @@
          einem Respec ist der Baum leer, aber die Checkpoint-Liste endet bei
          130 TT. Wer darueber steht und keine Studies hat, bekaeme sonst gar
          keinen Schritt — die EC-Route bringt ihren eigenen Farm-Tree mit. */
-      let kern = tt < 130 ? konkreteFrueheEternity(p) : konkreteEcRoute(p);
+      let kern = tt < 130 && !ec1FuerUpgradeOffen(p) ? konkreteFrueheEternity(p) : konkreteEcRoute(p);
       if (!kern.schritte.length) kern = konkreteEcRoute(p);
       schritte.push(...kern.schritte);
     } else if (epStand < 4000) {
@@ -2365,8 +2378,9 @@
       // An active lock completes the preparation, not the upgrade requirement.
       const glyph = eintrag.offen.some(ziel => ziel.id === "ru9") ? ru9GlyphSchritt(p) : null;
       if (glyph) schritte.push(glyph);
-      const offen = eintrag.offen.filter(ziel => eintrag.gruppe !== "realityGlyphSchwelle"
-        || (!hat(p.realityRequirementLocks, Number(ziel.id.slice(2))) && !(glyph && ziel.id === "ru9")));
+      const offen = eintrag.offen.filter(ziel => !(ziel.id === "ru12" && ec1FuerUpgradeOffen(p)
+        && hat(p.realityRequirementLocks, 12)) && (eintrag.gruppe !== "realityGlyphSchwelle"
+        || (!hat(p.realityRequirementLocks, Number(ziel.id.slice(2))) && !(glyph && ziel.id === "ru9"))));
       if (offen.length === 0) continue;
       schritte.push({
         id: eintrag.id,
