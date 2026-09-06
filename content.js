@@ -513,9 +513,9 @@
       warum: "Perks bleiben dauerhaft gekauft; du kannst sie nicht zurücknehmen. Die angezeigten Käufe sind von deinem Bestand aus erreichbar und mit deinen {perkPunkte} Perk-Punkten bezahlbar. {perkWarum}.",
       soGehts: [
         "Reality → Perks: Kauf in dieser Reihenfolge {perkJetzt}.",
-        "Reality → Perks: Prüfe, dass {perkJetzt} grün ist."
+        "Reality → Perks: Prüfe, dass {perkJetzt} als gekauft markiert ist. Die Farbe hängt von Perk-Familie und Darstellung ab."
       ],
-      fertigWenn: "{perkJetzt} im Perk-Baum grün ist.",
+      fertigWenn: "{perkJetzt} im Perk-Baum gekauft ist.",
       siehe: ["perksWaehlen"],
     },
 

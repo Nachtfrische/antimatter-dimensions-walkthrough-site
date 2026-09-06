@@ -431,6 +431,7 @@
       tree ? "Außerhalb einer Challenge Time Studies respecen, eternitieren und den mit Jetzt bezeichneten EP-Farm-Tree laden."
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
+      ...(hat(p.perks, 31) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree verwenden; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen. Erst beim später angegebenen Active-Tree gelten dessen Handgriffe."] : []),
       ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal." : "Automatic Eternity auf „Eternity at X EP“ mit 0 stellen, einschalten und zehn kurze Eternities für TS121 abwarten."} Danach Eternity-Autobuyer aus und Replicanti-Galaxien mit R kaufen.${hat(p.achievementIds, 138) ? " r138 automatisiert die Active-RGs." : ""}`] : []),
       ...(studies.has(181) ? ["Ohne TS181 nach vollen Replicanti-Galaxien crunchen. Sobald TS181 im Baum steht: Crunch-Autobuyer ausschalten, Dimboost/Galaxy unbeschränkt auf 0 s, Eternity-Autobuyer für den Push aus."]
         : studies.has(61) ? ["Nach vollen Replicanti-Galaxien crunchen; Eternity-Autobuyer für den abschließenden EP-Push ausschalten."] : []),
@@ -731,12 +732,12 @@
     [30, ["ANR", "Dimboosts und Galaxien setzen AD, Tickspeed und Sacrifice nicht mehr zurück"]],
     [31, ["PASS", "TS122 gibt 50x EP, TS142 e50x IP, TS132 macht Replicanti 3x schneller"]],
     [40, ["EU1", "Erste Reihe Eternity Upgrades schaltet sich gratis frei"]],
-    [41, ["EU2", "Zweite Reihe Eternity Upgrades kauft sich selbst"]],
+    [41, ["EU2", "Zweite Reihe Eternity Upgrades gratis, sobald dein EP-Bestand je ein Zehnmilliardstel des normalen Preises erreicht"]],
     [42, ["DU1", "Zweite Reihe Dilation Upgrades gratis nach dem Unlock"]],
     [43, ["DU2", "Dritte Reihe Dilation Upgrades gratis nach dem Unlock"]],
     [44, ["ATT", "Die passive TT-Erzeugung kauft sich selbst"]],
     [45, ["ATD", "Time Dimensions 5 bis 8 schalten sich selbst frei"]],
-    [46, ["REAL", "Reality schaltet sich ab e4000 EP von selbst frei"]],
+    [46, ["REAL", "Reality-Study wird ab e4000 EP und freigeschalteter TD8 automatisch gekauft; kein automatischer Reset"]],
     [51, ["IDR", "Infinity Dimensions haben keine Antimaterie-Bedingung mehr"]],
     [52, ["TGR", "Das zweite Dilation-Rebuyable setzt Dilated Time nicht mehr zurück"]],
     [53, ["DILR", "Dilation braucht weder EC11 und EC12 noch 12.900 Gesamt-TT"]],
@@ -744,9 +745,9 @@
     [55, ["EC2R", "TS181 ohne EC2-Abschluss kaufbar"]],
     [56, ["EC3R", "TS181 ohne EC3-Abschluss kaufbar"]],
     [57, ["EC5R", "TS62 ohne EC5-Abschluss kaufbar"]],
-    [60, ["PEC1", "Alle 60 Minuten schließt sich eine EC von selbst ab"]],
-    [61, ["PEC2", "Zweiter automatischer EC-Abschluss"]],
-    [62, ["PEC3", "Dritter automatischer EC-Abschluss"]],
+    [60, ["PEC1", "Alle 60 realen Minuten ein automatischer EC-Stufenabschluss, der Reihe nach"]],
+    [61, ["PEC2", "Verkürzt den automatischen EC-Stufenabschluss auf alle 40 realen Minuten"]],
+    [62, ["PEC3", "Verkürzt den automatischen EC-Stufenabschluss auf alle 20 realen Minuten"]],
     [70, ["ACT", "Active-Pfad-Multiplikatoren sind immer maximal"]],
     [71, ["IDL", "Idle-Pfad startet, als wären 15 Minuten vergangen"]],
     [72, ["ECR", "Eternity Challenges brauchen außer TT keine Freischaltbedingung mehr"]],
@@ -763,10 +764,10 @@
     [105, ["TTF", "TT-Kauf verbraucht kein AM, IP oder EP mehr"]],
     [106, ["TTM", "TT-Autobuyer kauft Max statt einzeln"]],
     [107, ["DAB", "Dilation-Autobuyer kauft in Bulk"]],
-    [201, ["ACH1", "Achievement-Timer auf 20 Minuten"]],
-    [202, ["ACH2", "Achievement-Timer auf 13 Minuten"]],
-    [203, ["ACH3", "Achievement-Timer auf 9 Minuten"]],
-    [204, ["ACH4", "Achievement-Timer auf 6 Minuten"]],
+    [201, ["ACH1", "Achievement-Timer auf 20 Minuten pro Achievement"]],
+    [202, ["ACH2", "Achievement-Timer auf 12 Minuten pro Achievement"]],
+    [203, ["ACH3", "Achievement-Timer auf 6 Minuten pro Achievement"]],
+    [204, ["ACH4", "Achievement-Timer auf 2 Minuten pro Achievement"]],
     [205, ["ACHNR", "Die ersten 13 Achievement-Reihen sofort, und Reality setzt sie nicht mehr zurück"]],
   ]);
 
@@ -1259,7 +1260,7 @@
     const activeBaum = alternative?.split("|")[0].split(",").includes("121") ? alternative : null;
     const hinweis = [
       !p.hasDilationStudySplit ? "Ohne Time Study Split lassen die Imports den noch gesperrten dritten Dimensionspfad weg." : "",
-      budget < 7858 ? `Für deine ${zahl(budget)} verfügbaren TT ist der Dilation-Baum verkürzt; er priorisiert AD+Idle und ab 2.945 TT TS192 + TS233.` : "",
+      budget < 7858 ? `Für deine ${zahl(budget)} verfügbaren TT ist der Dilation-Baum verkürzt; er priorisiert AD+${hat(p.perks, 31) && !active ? "Passive mit PASS" : "Idle"} und ab 2.945 TT TS192 + TS233.` : "",
       activeBaum ? "Nach den ersten zwei erfolgreichen Dilation-Läufen auf den zusätzlichen Active-Tree wechseln, auch unter 1 Mio. Eternities. Mit PASS eignet sich bereits der erste Passive-Lauf." : "",
     ].filter(Boolean).join(" ");
     return { farmBaum, epBaum, activeBaum, hinweis };
@@ -1281,7 +1282,8 @@
     const laufzeit = sekunden < 60 ? `${sekunden} Sekunden` : sekunden < 3600
       ? `${Math.floor(sekunden / 60)} Minuten` : `${(sekunden / 3600).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Stunden`;
     const communityZeit = ersterLauf
-      ? budget >= 7858 ? "Erster erfolgreicher Dilation-Lauf: grob 30–60 Minuten mit vollständigem Idle-Aufbau (Pins / Wiki-Guide). Mit Reality-Boni oft schneller. Das ist eine Laufdauer als Orientierung, keine verbleibende Wartezeit."
+      ? hat(p.perks, 31) ? "PASS verstärkt den ersten Passive-Lauf. Für diese Perk- und Glyph-Kombination ist keine verlässliche Dauer aus dem Save ableitbar; die Idle-Zeiten ohne PASS gelten hier nicht."
+        : budget >= 7858 ? "Erster erfolgreicher Dilation-Lauf: grob 30–60 Minuten mit vollständigem Idle-Aufbau (Pins / Wiki-Guide). Mit Reality-Boni oft schneller. Das ist eine Laufdauer als Orientierung, keine verbleibende Wartezeit."
         : budget >= 2945 ? "Bei früh gekaufter Dilation mit verkürztem AD+Idle-Aufbau und TS192 + TS233 nennen die Pins bis etwa 1 Stunde 15 Minuten. Glyphs und Upgrades können das deutlich verkürzen; keine Restzeit-Prognose."
           : "Unter 2.945 verfügbaren TT nennen die Pins etwa 3 Stunden, im ungünstigen Fall bis 4 Stunden für den ersten Dilation-Lauf. Voraussetzung: AD+Idle und etwa 100.000, besser 200.000–300.000 Eternities; mit guten Glyphs/Upgrades schneller."
       : (p.realities ?? 0) === 0
@@ -2454,13 +2456,26 @@
     const epSerie = serie(p.recentEternityEPLog10);
     const ipSerie = serie(p.recentInfinityIPLog10);
     const r143Jetzt = ep >= 4000;
+    const r143Automatik = hat(p.realityUpgrades, 13) && ["reality", "dilation"].includes(phase);
+    const r143Vorbereitung = r143Automatik && ep < 4000;
+    const r143AutoVersuch = frei && r143Automatik && p.dilationUnlocked
+      && Math.max(r.dilatedTimeLog10 ?? -Infinity, r.maxDilatedTimeExponent ?? -Infinity) >= 20
+      && (ep <= 2000 || (epSerie >= 2 && p.eternityAutobuyer?.mode === 2));
     // Row 14 is obtainable before Reality 1. The reminder starts only once that
     // reset is already part of the player's progression; later runs retain it.
-    add(143, "Yo dawg, I heard you liked reskins...", frei && (r143Jetzt || p.realities > 0),
-      r143Jetzt ? "Vor der nächsten Reality" : "Für später in dieser Reality",
-      r143Jetzt ? "Hol die zehn aufsteigenden Eternities vor dem Reality-Reset. Danach setzen Galaxien deine Dimension Boosts nicht mehr zurück."
+    add(143, "Yo dawg, I heard you liked reskins...", ruhig && ((frei && (r143Jetzt || p.realities > 0)) || (p.dilationActive && r143Vorbereitung)),
+      r143AutoVersuch ? "Nach dem Dilation-Ausbau versuchen" : r143Vorbereitung ? "Vor dem EP-Push nach Dilation vorbereiten" : r143Jetzt ? "Vor der nächsten Reality" : "Für später in dieser Reality",
+      r143AutoVersuch ? "Du hast The Telemechanical Process und mindestens e20 Dilated Time im Rekord. Versuche die aufsteigenden Eternities mit dem verbesserten Autobuyer; dieser DT-Richtwert garantiert noch keinen Abschluss."
+        : r143Vorbereitung ? "The Telemechanical Process ist gekauft: Erst das aktuelle EP-Ziel sichern, dann Dilation erreichen. Vor dem großen EP-Push den Save neu einlesen. Für den bequemeren r143-Versuch zunächst Dilation ausbauen und den EP-Rekord möglichst bei e1000–e2000 halten; nicht extra auf e4000 EP pushen."
+        : r143Jetzt ? "Hol die zehn aufsteigenden Eternities vor dem Reality-Reset. Danach setzen Galaxien deine Dimension Boosts nicht mehr zurück."
         : "Ab e4000 EP-Rekord: Save neu einlesen und zehn aufsteigende Eternities vor dem Reality-Reset mitnehmen. Dann erscheint hier die Anleitung; jetzt erst das aktuelle EP-Ziel verfolgen.",
-      r143Jetzt ? [
+      r143AutoVersuch ? [
+        "Save exportieren. Automator und gegebenenfalls Auto-Reality pausieren. Für den Versuch keine Challenges oder zusätzlichen manuellen Eternities einschieben.",
+        "Außerhalb von Dilation den EP-Push-Tree aus dem Hauptplan laden; falls dafür Respec nötig ist, zuerst respecen und eternitieren. Danach Time-Study-Respec ausschalten.",
+        "Automatic Eternity auf „X times highest“ mit e310 stellen und einschalten. Die übrigen Produktions-Autobuyer laufen lassen; TDs und ×5 EP weiterkaufen, soweit keine offene Upgrade-Bedingung diese Käufe verbietet.",
+        `Der Modus vergleicht mit dem höchsten EP-Bestand dieser Reality. Aktuell passende Serie: ${epSerie}/10. Bis zum Achievement laufen lassen; e20 DT und 30 Sekunden sind keine Erfolgsgarantie. Stockt die Serie, Save neu einlesen und Produktion prüfen, keine kleine Zwischen-Eternity auslösen.`,
+        "Nach r143 die bisherigen Autobuyer-Einstellungen wiederherstellen und den Hauptplan fortsetzen.",
+      ] : r143Jetzt ? [
         `Auto-Eternity pausieren.${p.automatorUnlocked ? " Auch den Automator pausieren." : ""}${hat(p.realityUpgrades, 25) ? " Auto-Reality ausschalten." : ""} Nicht auf 0 EP farmen und keine Challenge einschieben: Ein kleiner EP-Gewinn unterbricht die Serie. Time-Study-Respec nur für den Start verwenden; danach die Studies schrittweise ausbauen.`,
         epSerie >= 2 ? `Deine letzten ${epSerie} Eternities bilden bereits eine passende Serie (von 10). ${epSerie < 10 ? `Nächster sicherer Gewinn: mindestens e${Math.ceil(p.recentEternityEPLog10[0] + 310)} EP. Falls das zu hoch ist: Autobuyer pausieren, Studies respecen, eternitieren und ohne Studies nur AD1 kaufen. Mit möglichst kleinem EP-Gewinn eine neue Serie beginnen.` : "Alle zehn Abstände passen. Prüfe die Achievement-Anzeige im Spiel, bevor du resettest."}`
           : "Beginne mit möglichst wenig EP: Autobuyer pausieren, Studies respecen, eternitieren; dann ohne Studies nur AD1 kaufen und für einen kleinen EP-Gewinn eternitieren. Um e1000 EP als Startgewinn ist hier normal.",

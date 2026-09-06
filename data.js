@@ -2078,7 +2078,7 @@ window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = [
   const coreStages = [...stages].sort((a, b) => a.tt - b.tt);
   for (let budget = 17; budget < 100; budget++) {
     let tree = coreStages.filter(stage => stage.tt <= budget).at(-1).tree;
-    for (const id of [21, 33]) if (!tree.split("|")[0].split(",").includes(String(id))
+    for (const id of [...(clears[4] > 0 || perks.includes(57) ? [62] : []), 21, 33]) if (!tree.split("|")[0].split(",").includes(String(id))
       && cost(tree) + data.studyCosts[id] <= budget) tree = tree.replace("|0", `,${id}|0`);
     if (!stages.some(stage => stage.tree === tree)) stages.push({ tt: cost(tree), tree });
   }
@@ -2101,7 +2101,11 @@ window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = [
       stages.push({ tt: cost(tree), tree });
     }
   }
-  return stages.sort((a, b) => a.tt - b.tt);
+  // PASS: komfortable fruehe EP-Farm ohne TS121-Aufbau und manuelle Active-RGs.
+  // Ab TD+171 bleibt die Push-Route bestehen; PASS ist kein universeller Ersatz.
+  return stages.map(stage => perks.includes(31) && stage.tt < 100
+    ? { ...stage, tree: stage.tree.replace(/\b(121|131|141)\b/g, id => Number(id) + 1) }
+    : stage).sort((a, b) => a.tt - b.tt);
 };
 
 window.EC_GUIDE_DATA.planFarmTree = function planFarmTree(run, totalTT, clears = [], perks = []) {
@@ -2126,6 +2130,7 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   // ab 2945 TT haben TS192+TS233 Vorrang, darunter die Reihen 19/21.
   let ids = data.lateEpFarmRoadmap[0].tree.split("|")[0]
     .replace("73,83,93,103", "71,81,91,101").replace("121,131,141", "123,133,143");
+  if (!active && perks.includes(31)) ids = ids.replace("123,133,143", "122,132,142");
   if (!(clears[4] > 0 || perks.includes(57))) ids = ids.replace(",62,", ",");
   const priority = totalTT >= 2945
     ? [192, 193, 213, 225, 233, 191, 211, 212, 214]
