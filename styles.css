@@ -389,6 +389,9 @@ p { margin: 0; }
 .achievement-liste .handgriffe { margin-top: 0.5rem; }
 
 /* ---------------- Baum-Importe ---------------- */
+.ec-etappe { margin-top: 1.5rem; }
+.ec-etappe h4 { font-size: 1rem; margin-bottom: 0.5rem; }
+.ec-etappe .handgriffe { margin-top: 0; }
 
 .baum { margin: 1rem 0; }
 .baum-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.375rem; }

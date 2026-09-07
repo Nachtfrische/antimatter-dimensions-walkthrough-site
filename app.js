@@ -182,6 +182,24 @@
   function schrittMarkup(schritt, nummer) {
     const inhalt = INHALT.textFuer(schritt);
     if (!inhalt) return "";
+    if (schritt.etappen) {
+      const etappen = schritt.etappen.map(etappe => {
+        const text = INHALT.ecEtappeFuer(etappe);
+        return `<div class="ec-etappe"><h4>${schuetze(text.kurz)}</h4>
+          <ul class="handgriffe">${text.soGehts.map(t => `<li>${schuetze(t)}</li>`).join("")}</ul>
+          ${text.falle ? `<p class="falle"><b>Achtung:</b> ${schuetze(text.falle)}</p>` : ""}
+          ${(etappe.baeume ?? []).map(b => baumMarkup(b.bezeichnung, b.importString)).join("")}
+        </div>`;
+      }).join("");
+      return `<li class="schritt"><span class="schritt-nummer" aria-hidden="true">${nummer}</span>
+        <h3>${schuetze(inhalt.kurz)}</h3>
+        ${schritt.hinweis ? `<p class="fokus-hinweis">${schuetze(schritt.hinweis)}</p>` : ""}
+        ${etappen}
+        <details class="aufklappen"><summary>Warum?</summary>
+          <p>${schuetze(inhalt.warum)}</p><p>${schuetze(inhalt.fertigWenn)}</p>
+          ${schritt.etappen.map(INHALT.textFuer).filter(t => t.communityZeit).map(t => `<p>${schuetze(t.communityZeit)}</p>`).join("")}
+        </details></li>`;
+    }
 
     const handgriffe = inhalt.soGehts
       .map(zeile => `<li>${schuetze(zeile)}</li>`).join("");
@@ -265,6 +283,9 @@
 
     knoten.schrittfolge.innerHTML = aktuellerPlan.schritte
       .map((schritt, index) => schrittMarkup(schritt, index + 1)).join("");
+    if (aktuellerPlan.schritte.some(s => s.etappen)) {
+      knoten.phasenEinleitung.textContent += " Die folgenden Challenges der Reihe nach abarbeiten; ihre TT-Ziele gelten jeweils vor dem Lauf. Erst danach oder bei einer Abweichung einen neuen Save einlesen.";
+    }
 
     const achievements = aktuellerPlan.achievements ?? [];
     knoten.achievementBlock.hidden = achievements.length === 0;

@@ -1168,8 +1168,52 @@
     95: "r95 „Is this safe?“ fehlt: Starte mit Big Crunch eine neue Infinity. Kauf Replicanti-Chance und -Intervall, bis du innerhalb einer Stunde das Replicanti-Limit (ca. 1,79e308) erreichst. Kauf dabei keine Replicanti-Galaxie; Auto Galaxy bleibt aus. Danach bleiben die Replicanti bei Big Crunch erhalten und du musst sie nicht jedes Mal neu aufbauen.",
   };
 
+  function ecEtappeFuer(schritt) {
+    const text = textFuer(schritt);
+    const w = schritt.werte;
+    const studies = (schritt.baeume ?? []).flatMap(b => b.importString.split("|")[0].split(",").map(Number));
+    if (schritt.gruppe === "ecTt") return { ...text,
+      kurz: `TT farmen · ${w.standTT} → ${w.readyTT} TT`,
+      soGehts: [
+        "Außerhalb der Challenge respecen, eternitieren, EP-Farm-Tree laden. Weitere Trees erst an ihrer TT-Marke verwenden.",
+        ...text.soGehts.filter(t => /Studienpfad muss/.test(t)),
+        ...(text.soGehts.some(t => t.startsWith("Mit PASS")) ? ["Mit PASS den Passive-Tree verwenden; RGs automatisch kaufen lassen, sonst mit R."] : []),
+        ...(studies.includes(121) ? text.soGehts.filter(t => t.startsWith("Ab dem Baum mit TS121:")) : []),
+        studies.includes(181) ? "Mit TS181: Crunch-Autobuyer aus, Dimboost/Galaxy unbeschränkt auf 0 s. Ohne TS181 nach vollen RGs crunchen. Eternity-Autobuyer für den EP-Push aus."
+          : "Nach vollen Replicanti-Galaxien crunchen; für den EP-Push Eternity-Autobuyer aus.",
+        ...text.soGehts.filter(t => t.startsWith("EP-Farmen lassen:")).map(t => t.replace("und den Save neu einlesen", "und hier weitermachen")),
+        `TDs und ×5 EP kaufen; AM-/IP-/EP-Theorems bis ${w.readyTT} Gesamt-TT sammeln. Dann hier mit der Freischaltung weitermachen.`,
+      ],
+    };
+    if (schritt.gruppe === "ecUnlock") return { ...text, kurz: "Freischalten",
+      soGehts: schritt.inhalt?.soGehts ?? [
+        `Respecen, eternitieren, Freischalt-Farm-Tree laden und ${w.unlock} erreichen.`,
+        `EC${w.ec}-Knoten kaufen; die beim Tree genannten TT dafür frei lassen. Erst danach zum Run-Tree wechseln.`,
+      ],
+    };
+    if (schritt.gruppe === "ecRun") return { ...text, kurz: "Challenge spielen",
+      soGehts: !schritt.baeume.length ? [
+        `Laufenden ${w.run} ohne Respec bis ${w.goal} weiterspielen, dann Eternity.`, w.tip,
+      ] : [
+        `Respecen und außerhalb der Challenge eternitieren; ${w.ec === 8 ? "Start-Tree" : "Run-Tree"} laden. EC${w.ec} starten, bei ${w.goal} mit Eternity abschließen.${w.ec === 11 ? " Nur AD-Pfad, TS72/73 ungekauft lassen." : w.ec === 12 ? " Nur TD-Pfad, TS71/72 ungekauft lassen." : ""}`,
+        ...(w.ec === 8 ? ["Alle 50 ID-Käufe in ID1; 9 % Replicanti-Chance, RG-Upgrades laut Tipp, Rest ins Intervall. Erst bei vollen Replicanti/RGs den restlichen Run-Tree ohne Respec importieren."] : []),
+        w.tip,
+      ],
+    };
+    return text;
+  }
+
   function textFuer(schritt) {
     if (!SCHRITTE[schritt.id]) return null;
+    if (schritt.etappen) {
+      const texte = schritt.etappen.map(ecEtappeFuer);
+      return { ...textFuer({ ...schritt, etappen: null }),
+        kurz: `${schritt.etappen.at(-1).baeume.length ? "" : "Laufenden "}${schritt.werte.run} abschließen · ${schritt.werte.goal}`,
+        soGehts: texte.flatMap(t => t.soGehts.map((zeile, i) => i === 0 ? `${t.kurz}: ${zeile}` : zeile)),
+        falle: [...new Set(texte.map(t => t.falle).filter(Boolean))].join(" "),
+        warum: "Der Reihe nach abarbeiten: TT sammeln, falls nötig freischalten, dann den Lauf abschließen. Spätere Schritte setzen die vorherigen Abschlüsse und TT-Ziele voraus. Ein neuer Save ist erst nach der Folge oder bei einer Abweichung nötig.",
+      };
+    }
     const basis = { ...SCHRITTE[schritt.id], ...schritt.inhalt };
     if (schritt.id === "realityGlyphSchwelle" && schritt.zielIds?.length === 1 && schritt.zielIds[0] === "ru13") {
       basis.kurz = "Sichere The Telemechanical Process kostenlos für später.";
@@ -1410,5 +1454,5 @@
     ].join("\n");
   }
 
-  window.AD_INHALT = { SCHRITTE, PHASEN, textFuer, kontextFuer };
+  window.AD_INHALT = { SCHRITTE, PHASEN, textFuer, ecEtappeFuer, kontextFuer };
 })();

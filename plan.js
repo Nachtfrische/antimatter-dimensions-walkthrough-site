@@ -516,21 +516,26 @@
         && lauf.tier === (stand.clears[lauf.ec - 1] ?? 0) + 1);
       const teil = ecEinzellauf(stand, laufend);
       ergebnis ??= teil;
-      schritte.push(...teil.schritte);
       const laufSchritt = teil.schritte.find(s => s.gruppe === "ecRun");
-      if (!laufSchritt || hat(p.perks, 73) || ec1FuerUpgradeOffen(p)) break;
+      if (!laufSchritt) {
+        schritte.push(...teil.schritte);
+        break;
+      }
+      schritte.push({ ...laufSchritt, etappen: teil.schritte,
+        baeume: teil.schritte.flatMap(s => s.baeume ?? []) });
+      if (hat(p.perks, 73)) break;
       const lauf = DATEN.route.find(r => r.run === laufSchritt.werte.run);
       // This is an ordered route, not a simulated production forecast. Only
       // apply the completion and TT target the preceding steps explicitly ask for.
       stand = { ...stand, clears: [...stand.clears], totalTT: Math.max(stand.totalTT ?? 0, lauf.readyTT),
         currentChallenge: { requirementBits: (stand.currentChallenge?.requirementBits ?? 0) & ~(1 << lauf.ec) },
-        resources: { ...stand.resources }, vorschau: true };
+        studies: [], resources: { ...stand.resources }, vorschau: true };
       stand.clears[lauf.ec - 1] = lauf.tier;
     }
     if (ec1FuerUpgradeOffen(p)) {
       const erster = schritte.find(s => s.gruppe !== "ecRequirementSchutz");
       if (erster) erster.hinweis = [erster.hinweis,
-        "e70 EP für The Knowing Existence (Reihe 3, Spalte 2) bleibt das spätere Ziel. Jetzt die folgenden TT-/EC-Schritte spielen; ihre Belohnungen helfen beim EP-Push. Nur EC1 bleibt bis zur erfüllten Bedingung gesperrt. Nach diesem EC-Abschluss den Save neu einlesen. Sobald du nach einer Eternity mindestens e70 EP besitzt, beim Upgrade ohne Shift auf Cost: prüfen; danach ist EC1 erlaubt.",
+        "EC1 bleibt für The Knowing Existence (Reihe 3, Spalte 2) gesperrt. Diese Challenges der Reihe nach spielen. Sobald du nach einer Eternity e70 EP besitzt: ohne Shift auf Cost: prüfen und den Plan aktualisieren; dann ist EC1 erlaubt.",
       ].filter(Boolean).join(" ");
     }
     return { ...ergebnis, schritte: schritte.slice(0, MAX_SICHTBAR) };
@@ -2472,18 +2477,16 @@
     const ipSerie = serie(p.recentInfinityIPLog10);
     const r143Jetzt = ep >= 4000;
     const r143Automatik = hat(p.realityUpgrades, 13) && ["reality", "dilation"].includes(phase);
-    const r143Vorbereitung = r143Automatik && ep < 4000;
+    const r143Vorbereitung = r143Automatik && p.dilationUnlocked && ep <= 2000;
     const r143AutoVersuch = frei && r143Automatik && p.dilationUnlocked
       && Math.max(r.dilatedTimeLog10 ?? -Infinity, r.maxDilatedTimeExponent ?? -Infinity) >= 20
       && (ep <= 2000 || (epSerie >= 2 && p.eternityAutobuyer?.mode === 2));
-    // Row 14 is obtainable before Reality 1. The reminder starts only once that
-    // reset is already part of the player's progression; later runs retain it.
-    add(143, "Yo dawg, I heard you liked reskins...", ruhig && ((frei && (r143Jetzt || p.realities > 0)) || (p.dilationActive && r143Vorbereitung)),
-      r143AutoVersuch ? "Nach dem Dilation-Ausbau versuchen" : r143Vorbereitung ? "Vor dem EP-Push nach Dilation vorbereiten" : r143Jetzt ? "Vor der nächsten Reality" : "Für später in dieser Reality",
+    // Erst eine aktuelle Gelegenheit oder der Dilation-Push, der sie verbauen kann.
+    add(143, "Yo dawg, I heard you liked reskins...", ruhig && ((frei && (r143Jetzt || r143Vorbereitung || r143AutoVersuch)) || (p.dilationActive && r143Vorbereitung)),
+      r143AutoVersuch ? "Nach dem Dilation-Ausbau versuchen" : r143Vorbereitung ? "Vor dem EP-Push nach Dilation vorbereiten" : "Vor der nächsten Reality",
       r143AutoVersuch ? "Du hast The Telemechanical Process und mindestens e20 Dilated Time im Rekord. Versuche die aufsteigenden Eternities mit dem verbesserten Autobuyer; dieser DT-Richtwert garantiert noch keinen Abschluss."
-        : r143Vorbereitung ? "The Telemechanical Process ist gekauft: Erst das aktuelle EP-Ziel sichern, dann Dilation erreichen. Vor dem großen EP-Push den Save neu einlesen. Für den bequemeren r143-Versuch zunächst Dilation ausbauen und den EP-Rekord möglichst bei e1000–e2000 halten; nicht extra auf e4000 EP pushen."
-        : r143Jetzt ? "Hol die zehn aufsteigenden Eternities vor dem Reality-Reset. Danach setzen Galaxien deine Dimension Boosts nicht mehr zurück."
-        : "Ab e4000 EP-Rekord: Save neu einlesen und zehn aufsteigende Eternities vor dem Reality-Reset mitnehmen. Dann erscheint hier die Anleitung; jetzt erst das aktuelle EP-Ziel verfolgen.",
+        : r143Vorbereitung ? "Vor dem großen EP-Push: Dilation bis e20 DT ausbauen und den EP-Rekord möglichst unter e2000 halten. Dann den Plan für den r143-Versuch mit The Telemechanical Process aktualisieren."
+        : "Hol die zehn aufsteigenden Eternities vor dem Reality-Reset. Danach setzen Galaxien deine Dimension Boosts nicht mehr zurück.",
       r143AutoVersuch ? [
         "Save exportieren. Automator und gegebenenfalls Auto-Reality pausieren. Für den Versuch keine Challenges oder zusätzlichen manuellen Eternities einschieben.",
         "Außerhalb von Dilation den EP-Push-Tree aus dem Hauptplan laden; falls dafür Respec nötig ist, zuerst respecen und eternitieren. Danach Time-Study-Respec ausschalten.",
