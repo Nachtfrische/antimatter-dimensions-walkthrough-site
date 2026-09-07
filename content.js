@@ -1192,7 +1192,9 @@
       ],
     };
     if (schritt.gruppe === "ecRun") return { ...text, kurz: "Challenge spielen",
-      soGehts: !schritt.baeume.length ? [
+      soGehts: schritt.baumBeibehalten ? [
+        `Den gemeinsamen Tree oben behalten; kein Respec oder erneuter Import nötig. EC${w.ec} starten, bei ${w.goal} mit Eternity abschließen.`, w.tip,
+      ] : !schritt.baeume.length ? [
         `Laufenden ${w.run} ohne Respec bis ${w.goal} weiterspielen, dann Eternity.`, w.tip,
       ] : [
         `Respecen und außerhalb der Challenge eternitieren; ${w.ec === 8 ? "Start-Tree" : "Run-Tree"} laden. EC${w.ec} starten, bei ${w.goal} mit Eternity abschließen.${w.ec === 11 ? " Nur AD-Pfad, TS72/73 ungekauft lassen." : w.ec === 12 ? " Nur TD-Pfad, TS71/72 ungekauft lassen." : ""}`,
@@ -1208,7 +1210,7 @@
     if (schritt.etappen) {
       const texte = schritt.etappen.map(ecEtappeFuer);
       return { ...textFuer({ ...schritt, etappen: null }),
-        kurz: `${schritt.etappen.at(-1).baeume.length ? "" : "Laufenden "}${schritt.werte.run} abschließen · ${schritt.werte.goal}`,
+        kurz: `${schritt.etappen.at(-1).baeume.length || schritt.etappen.at(-1).baumBeibehalten ? "" : "Laufenden "}${schritt.werte.run} abschließen · ${schritt.werte.goal}`,
         soGehts: texte.flatMap(t => t.soGehts.map((zeile, i) => i === 0 ? `${t.kurz}: ${zeile}` : zeile)),
         falle: [...new Set(texte.map(t => t.falle).filter(Boolean))].join(" "),
         warum: "Der Reihe nach abarbeiten: TT sammeln, falls nötig freischalten, dann den Lauf abschließen. Spätere Schritte setzen die vorherigen Abschlüsse und TT-Ziele voraus. Ein neuer Save ist erst nach der Folge oder bei einer Abweichung nötig.",

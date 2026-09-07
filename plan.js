@@ -521,6 +521,17 @@
         schritte.push(...teil.schritte);
         break;
       }
+      const unlock = teil.schritte.find(s => s.gruppe === "ecUnlock");
+      if (unlock?.baeume.length === 1 && laufSchritt.baeume.length === 1
+          && unlock.baeume[0].importString.split("|")[0] === laufSchritt.baeume[0].importString.split("|")[0]) {
+        unlock.baeume[0].bezeichnung = unlock.baeume[0].bezeichnung.replace("Baum für die Freischaltbedingung", "Gemeinsamer Freischalt- und Run-Tree");
+        unlock.inhalt = { ...unlock.inhalt, soGehts: (unlock.inhalt?.soGehts ?? [
+          `Respecen, eternitieren, gemeinsamen Tree laden und ${unlock.werte.unlock} erreichen.`,
+          `EC${unlock.werte.ec}-Knoten kaufen; die beim Tree genannten TT dafür frei lassen. Den Aufbau für den Lauf behalten.`,
+        ]).map(t => t.replace(/(?:zum|auf den) Run-Tree wechseln/g, "den gemeinsamen Tree behalten")) };
+        laufSchritt.baumBeibehalten = true;
+        laufSchritt.baeume = [];
+      }
       schritte.push({ ...laufSchritt, etappen: teil.schritte,
         baeume: teil.schritte.flatMap(s => s.baeume ?? []) });
       if (hat(p.perks, 73)) break;
