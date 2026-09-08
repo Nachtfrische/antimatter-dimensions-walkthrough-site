@@ -2481,6 +2481,32 @@
     };
   }
 
+  // Discord pin: cumulative imports, no respec between the ten Eternities.
+  function r143Etappen(p) {
+    const tree = DATEN.planDilationTree(studyBudget(p), p.clears, p.perks,
+      { ep: true, split: p.hasDilationStudySplit });
+    const ids = tree?.split("|")[0].split(",").map(Number) ?? [];
+    if (!ids.includes(234)) return [];
+    const bisVor = id => ids.slice(0, ids.indexOf(id));
+    const etappe = (nummer, titel, text, studies = []) => ({
+      nummer, titel, text,
+      baeume: studies.length ? [{ bezeichnung: `r143 · Eternity ${nummer} · nur ergänzen, kein Respec`,
+        importString: `${studies.join(",")}|0` }] : [],
+    });
+    return [
+      etappe(1, "Kleinen Startgewinn holen", "Ohne Studies nur AD1 kaufen. Sobald der Eternity-Knopf einen EP-Gewinn anbietet, einmal manuell eternitieren. Etwa e1000 EP sind normal, dein tatsächlicher Gewinn darf abweichen. Das ist Eternity 1 von 10. Den erzielten Exponenten in den Zielrechner eintragen."),
+      etappe(2, "Erste Studies und Produktion einschalten", "Tree importieren. Alle Produktions-Autobuyer einschalten, außer Infinity Dimensions und Replicanti-Galaxien. Crunch und Eternity bleiben aus. Bei Bedarf manuell crunchen und Replicanti-Galaxien einzeln kaufen. Beim berechneten EP-Gewinn einmal manuell eternitieren.", ids.filter(id => id <= 62)),
+      etappe(3, "Infinity Dimensions automatisch kaufen", "ID-Autobuyer einschalten. Den Tree von Eternity 2 behalten. Weiter bei Bedarf manuell crunchen und einzelne Replicanti-Galaxien kaufen; beim neuen Ziel einmal eternitieren."),
+      etappe(4, "Dimensionspfad ergänzen", "Tree importieren, dann wie bisher bis zum neuen EP-Ziel spielen und einmal eternitieren.", bisVor(111)),
+      etappe(5, "Active ergänzen", "Tree importieren. Keine schnellen Eternities für TS121 einschieben: Jede Eternity muss das neue EP-Ziel erreichen. Replicanti-Galaxien weiter einzeln kaufen; beim Ziel einmal eternitieren.", bisVor(181)),
+      etappe(6, "Mit demselben Tree weiterspielen", "Tree und Einstellungen von Eternity 5 behalten. Das neue EP-Ziel erreichen und einmal eternitieren."),
+      etappe(7, "IP ohne Crunch gewinnen", "Tree importieren. Ab TS181 nicht mehr crunchen: IP kommen automatisch. Einzelne Replicanti-Galaxien nach Bedarf; beim neuen Ziel einmal eternitieren.", bisVor(192)),
+      etappe(8, "Studies bis 214 ergänzen", "Tree importieren und bis zum neuen Ziel spielen. Replicanti-Galaxien noch manuell kaufen, dann einmal eternitieren.", bisVor(222)),
+      etappe(9, "Späte Verstärker ergänzen", "Tree importieren. Falls das Ziel zu langsam näherkommt, TS234 zusätzlich kaufen. Beim neuen Ziel einmal eternitieren.", [...bisVor(222), 222, 224, 226, 228]),
+      etappe(10, "Vollen EP-Tree verwenden", `${hat(p.achievementIds, 138) ? "Replicanti-Galaxien-Autobuyer einschalten." : "Replicanti-Galaxien manuell kaufen; mit Active funktioniert ihr Autobuyer erst nach r138."} Tree importieren, das letzte EP-Ziel erreichen und einmal eternitieren. Im Achievement-Tab prüfen, ob r143 leuchtet.`, ids),
+    ];
+  }
+
   // Official normal-achievements.js supplies conditions; the supplied Discord
   // pins supply deliberate detours. Current-run evidence never comes from a
   // lifetime record. These are opportunities, not extra progression blockers.
@@ -2522,17 +2548,21 @@
       r143AutoVersuch ? [
         "Save exportieren. Automator und gegebenenfalls Auto-Reality pausieren. Für den Versuch keine Challenges oder zusätzlichen manuellen Eternities einschieben.",
         "Außerhalb von Dilation den EP-Push-Tree aus dem Hauptplan laden; falls dafür Respec nötig ist, zuerst respecen und eternitieren. Danach Time-Study-Respec ausschalten.",
-        "Automatic Eternity auf „X times highest“ mit e310 stellen und einschalten. Die übrigen Produktions-Autobuyer laufen lassen; TDs und ×5 EP weiterkaufen, soweit keine offene Upgrade-Bedingung diese Käufe verbietet.",
-        `Der Modus vergleicht mit dem höchsten EP-Bestand dieser Reality. Aktuell passende Serie: ${epSerie}/10. Bis zum Achievement laufen lassen; e20 DT und 30 Sekunden sind keine Erfolgsgarantie. Stockt die Serie, Save neu einlesen und Produktion prüfen, keine kleine Zwischen-Eternity auslösen.`,
+        "Automatic Eternity auf „X times highest EP“ mit e310 stellen und einschalten. Die übrigen Produktions-Autobuyer laufen lassen; TDs und ×5 EP weiterkaufen, soweit keine offene Upgrade-Bedingung diese Käufe verbietet.",
+        `Der Modus vergleicht mit dem höchsten EP-Bestand dieser Reality. Aktuell passende Serie: ${epSerie}/10. Bis zum Achievement laufen lassen; e20 DT und 30 Sekunden sind keine Erfolgsgarantie. Stockt die Serie, TDs und ×5 EP weiter ausbauen, keine kleine Zwischen-Eternity auslösen.`,
         "Nach r143 die bisherigen Autobuyer-Einstellungen wiederherstellen und den Hauptplan fortsetzen.",
       ] : r143Jetzt ? [
-        `Auto-Eternity pausieren.${p.automatorUnlocked ? " Auch den Automator pausieren." : ""}${hat(p.realityUpgrades, 25) ? " Auto-Reality ausschalten." : ""} Nicht auf 0 EP farmen und keine Challenge einschieben: Ein kleiner EP-Gewinn unterbricht die Serie. Time-Study-Respec nur für den Start verwenden; danach die Studies schrittweise ausbauen.`,
-        epSerie >= 2 ? `Deine letzten ${epSerie} Eternities bilden bereits eine passende Serie (von 10). ${epSerie < 10 ? `Nächster sicherer Gewinn: mindestens e${Math.ceil(p.recentEternityEPLog10[0] + 310)} EP. Falls das zu hoch ist: Autobuyer pausieren, Studies respecen, eternitieren und ohne Studies nur AD1 kaufen. Mit möglichst kleinem EP-Gewinn eine neue Serie beginnen.` : "Alle zehn Abstände passen. Prüfe die Achievement-Anzeige im Spiel, bevor du resettest."}`
-          : "Beginne mit möglichst wenig EP: Autobuyer pausieren, Studies respecen, eternitieren; dann ohne Studies nur AD1 kaufen und für einen kleinen EP-Gewinn eternitieren. Um e1000 EP als Startgewinn ist hier normal.",
-        "Jeder weitere Gewinn muss mindestens das 1,79e308-Fache des vorigen sein; ×e310 gibt Reserve. Beispiel für zehn Gewinne: e1000 → e1310 → e1620 → e1930 → e2240 → e2550 → e2860 → e3170 → e3480 → e3790 EP. Bei höherem tatsächlichem Gewinn das nächste Ziel von diesem Wert aus neu berechnen.",
-        "Studies und Autobuyer nur nach Bedarf dazunehmen: zunächst bis TS62, dann IDs, bis TS103, dann bis TS171 mit Active, danach TS181, TS214 und die späten Studies. Replicanti-Galaxien zuerst manuell und sparsam kaufen; erst am Ende wieder automatisch. Am Eternity-Knopf immer den Gewinn dieses Resets prüfen, nicht deinen EP-Bestand.",
-        "Nach jeder passenden Eternity kannst du einen neuen Save einlesen, um Serienstand und nächstes EP-Ziel zu sehen. Nach r143 den normalen Tree und die zuvor verwendeten Autobuyer wiederherstellen, dann den Hauptplan fortsetzen.",
+        epSerie >= 2 ? `Deine letzten ${epSerie} Eternities bilden bereits eine passende Serie (von 10). ${epSerie < 10 ? `Nächster sicherer Gewinn: mindestens e${Math.ceil(p.recentEternityEPLog10[0] + 310)} EP. Für alle zehn wären bei diesen Mindestabständen etwa e${Math.ceil(p.recentEternityEPLog10[0] + 310 * (10 - epSerie))} EP nötig. Die folgende Anleitung beginnt deshalb bewusst eine neue Serie mit kleinem Startgewinn.` : "Alle zehn Abstände passen. Prüfe zuerst die Achievement-Anzeige im Spiel; eine neue Serie ist dann nicht nötig."}`
+          : "Die folgende Anleitung beginnt eine neue Serie mit kleinem Startgewinn. Du brauchst zehn aufsteigende EP-Gewinne hintereinander.",
+        `Vorbereitung (zählt noch nicht zu den zehn): Bisherige Autobuyer-Einstellungen notieren. Auto-Eternity zuerst ausschalten, dann die übrigen einzelnen Autobuyer ausschalten. Den Hauptschalter anlassen, damit du später einzelne Käufer aktivieren kannst.${p.automatorUnlocked ? " Auch den Automator pausieren." : ""}${hat(p.realityUpgrades, 25) ? " Auto-Reality ausschalten." : ""} Außerhalb von Dilation Respec time studies aktivieren → einmal Eternity → prüfen, dass der Study-Baum leer und Respec wieder aus ist. Jetzt ohne Studies nur AD1 kaufen und mit Eternity 1 beginnen.`,
+        "Während aller zehn Eternities: Auto-Eternity und Auto-Crunch bleiben aus. Kein Respec, keine Dilation, keine Challenges und keine zusätzlichen Eternities. Die Trees nur ergänzend importieren. Ein kleiner Zwischengewinn startet die Serie neu. „X times highest EP“ hier nicht verwenden: Der Modus nimmt den höchsten EP-Bestand dieser Reality, auch nach dem Neustart der Serie.",
+        "Zielregel ohne Save-Import: Unter Statistics → Past Prestige Runs „Showing total resource gain“ wählen und bei Eternities den EP-Gewinn der neuesten Eternity ablesen. Bei 2,5e1000 trägst du nur 1000 in den Rechner ein. Neues Mindestziel: e(Exponent + 311) EP Gewinn. Beispiel bei exakt diesen Exponenten: e1000 → e1311 → e1622 → e1933 → e2244 → e2555 → e2866 → e3177 → e3488 → e3799. Die Reserve deckt auch die weggelassene Mantisse ab.",
+        "Vor jedem Klick muss der Eternity-Knopf mindestens das berechnete Ziel als Gewinn anzeigen. Erst dann genau einmal eternitieren, den neuen tatsächlichen Exponenten eintragen und die nächste nummerierte Etappe spielen. Ein höherer Gewinn ist okay; das nächste Ziel wird dann entsprechend höher. Steigt die Anzeige schnell, direkt vor dem Klick noch einmal prüfen.",
+        "Falls ein Ziel stockt: Die Studies der nächsten Etappe schon jetzt ergänzen, ohne Respec oder Zwischen-Eternity; bei Bedarf weitere einzelne Replicanti-Galaxien kaufen. Nach TS181 nicht mehr crunchen. Wird selbst mit vollem Tree das Ziel unerreichbar, den Versuch beenden und vor einer späteren Reality erneut probieren.",
+        "Nach der zehnten passenden Eternity r143 im Achievement-Tab prüfen. Danach den normalen Tree und die notierten Autobuyer-Einstellungen wiederherstellen, dann den Hauptplan fortsetzen. Während der Anleitung ist kein neuer Save-Import nötig.",
       ] : []);
+    const manuell143 = result.find(a => a.id === 143);
+    if (manuell143 && r143Jetzt && !r143AutoVersuch) manuell143.etappen = r143Etappen(p);
     add(111, "Yo dawg, I heard you liked infinities...", frei && (ip >= 4000 || ipSerie >= 2), "Vor der nächsten Eternity",
       `Zehn Crunches mit jeweils mindestens ×1,79e308 IP-Gewinn verhindern künftig den Antimatter-Reset bei Dimboosts und Galaxien.${ipSerie >= 2 ? ` Aktuelle Serie: ${ipSerie}/10.` : ""}`,
       ["Eternity- und Crunch-Autobuyer pausieren. Zehn Crunches mit möglichst kleinem Startgewinn spielen, danach jeden Gewinn gegenüber dem tatsächlich letzten um ×e310 erhöhen. Studies/Replicanti-Galaxien schrittweise dazunehmen; keine kleinen Zwischen-Crunches.",
@@ -2606,6 +2636,19 @@
   function planeFuer(profil) {
     const plan = phasenPlan(profil);
     const schritte = plan.schritte.filter(schritt => schritt.id !== KONKRETE_SCHRITTE.ecReload.schrittId);
+    // Beide Reality-Routen brauchen auch nach e4000 den Dilation-Aufbau.
+    for (const schritt of schritte.filter(s => s.gruppe === "realityRm")) {
+      const { farmBaum } = dilationAufbau(profil);
+      schritt.werte.rmStart = profil.dilationActive
+        ? "Dilation läuft bereits. Sammle weiter DT und kauf die bezahlbaren Dilation-Upgrades. Nach dem nächsten ×3-TP-Kauf: Sobald Eternity zusätzliche TP anzeigt, Respec time studies aktivieren und den dilatierten Lauf mit Eternity beenden. Erst danach den EP-Push-Baum laden."
+        : "Für den EP-/RM-Push: Time Studies respecen, eternitieren und den EP-Push-Baum unten laden. Diesen Push außerhalb von Dilation spielen.";
+      schritt.werte.dilationWechsel = profil.dilationUnlocked
+        ? "Wenn der EP-/RM-Push stockt: außerhalb von Dilation Respec time studies aktivieren → Eternity → Dilation-Baum unten importieren → Dilate time. DT sammeln und ×3 TP / ×2 DT ausbauen. Nach dem nächsten ×3-TP-Kauf den Lauf bei zusätzlichem TP-Gewinn mit Respec + Eternity beenden; erst danach den EP-Push-Baum laden und erneut zum RM-Ziel pushen."
+        : "";
+      if (profil.dilationUnlocked && farmBaum) schritt.baeume.push({
+        bezeichnung: `Dilation-Baum für weitere TP/DT · ${zahl(baumKosten(farmBaum))} TT`, importString: farmBaum,
+      });
+    }
     // Gemeinsamer Einstieg fuer Sonderroute und regulaere Reality-Ziele.
     // Boni helfen beim IP-Push; sie sind KEINE zusaetzliche RU8-Bedingung.
     // Nach einem geplanten Reset ist der aktuelle Achievement-Bestand ungueltig.
@@ -2651,8 +2694,13 @@
     }
     const sichtbar = schritte.slice(0, MAX_SICHTBAR);
     const schonErklaert = new Set(sichtbar.flatMap(s => s.fehlendeAchievements ?? []));
-    return { ...plan, schritte: sichtbar, achievements: achievementHinweise(profil ?? {}, plan.phase)
-      .filter(a => !schonErklaert.has(a.id)) };
+    const achievements = achievementHinweise(profil ?? {}, plan.phase).filter(a => !schonErklaert.has(a.id));
+    if (achievements.some(a => a.id === 143 && a.anleitung.length)) {
+      for (const schritt of sichtbar.filter(s => s.gruppe === "realityRm")) {
+        schritt.vorab = ["Optional r143 zuerst: Wenn du das Achievement jetzt mitnehmen möchtest, folge zuerst der Anleitung unter „Noch mitnehmen“. Den folgenden RM-/Dilation-Plan mit Tree-Wechseln und kurzen Eternities erst nach diesem Versuch beginnen; diese Wechsel können die laufende Serie unterbrechen.", ...(schritt.vorab ?? [])];
+      }
+    }
+    return { ...plan, schritte: sichtbar, achievements };
   }
 
   function statusFuer(p, phase) {

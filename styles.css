@@ -387,6 +387,17 @@ p { margin: 0; }
 .achievement-liste p { color: var(--text-ruhig); font-size: 0.9375rem; }
 .achievement-liste .aufklappen { margin-top: 0.25rem; }
 .achievement-liste .handgriffe { margin-top: 0.5rem; }
+.r143-ziel { display: grid; gap: 0.625rem; margin: 1.5rem 0; }
+.r143-ziel label { font-weight: 600; }
+.r143-ziel input {
+  width: min(100%, 18rem); min-height: 44px; padding: 0.5rem 0.75rem;
+  font: inherit; color: var(--text); background: var(--grund-tief);
+  border: 1px solid var(--linie-hell); border-radius: var(--radius-klein);
+}
+.r143-ziel output { font-weight: 600; overflow-wrap: anywhere; }
+.r143-etappen { list-style: none; padding: 0; margin: 0; }
+.r143-etappen > li { margin-top: 1.5rem; }
+.r143-etappen h5 { font-size: 1rem; margin-bottom: 0.375rem; }
 
 /* ---------------- Baum-Importe ---------------- */
 .ec-etappe { margin-top: 1.5rem; }

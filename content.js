@@ -459,9 +459,10 @@
       warum: "Das RM-Ziel finanziert {zielKauf}; du hast bereits {bankRM} RM im Vorrat. "
         + "Dafür brauchst du {zielRM} weitere RM. Der EP-Richtwert berücksichtigt die Grundformel; die Anzeige im Spiel entscheidet über den Reset.",
       soGehts: [
-        "Time Studies respecen und den laufenden Dilation-/Eternity-Lauf mit Eternity beenden. Dann den EP-Push-Baum unten laden und außerhalb von Dilation bleiben.",
+        "{rmStart}",
         "{activeHandgriff}",
         "Push den Rekord dieser Reality bis mindestens e{zielEP} EP.",
+        "{dilationWechsel}",
         "Empfehlung: Warte, bis der Reality-Knopf mindestens {zielRM} RM anzeigt. Dann ist zusammen mit deinen {bankRM} RM genug für {zielKauf} da. Ein früherer Reset ist möglich, sobald die Reality-Study gekauft ist, finanziert aber noch nicht die ganze Liste.",
         "Nach weiterem Push den Save neu einlesen: Der Guide zeigt dann die Käufe mit dem neuen Gesamtbestand und die aktuelle Glyph-Auswahl.",
       ],
@@ -1443,7 +1444,9 @@
       "## Was mein Walkthrough als Nächstes vorschlägt",
       ...((plan.achievements ?? []).length ? ["", "Noch mitnehmen (Zeitpunkt beachten, eigene Läufe einzeln spielen):",
         ...plan.achievements.flatMap(a => [`- ${a.zeitpunkt}: r${a.id} „${a.name}“. ${a.text}`,
-          ...a.anleitung.map(text => `  - ${text}`)]), ""] : []),
+          ...a.anleitung.map(text => `  - ${text}`),
+          ...(a.etappen ?? []).flatMap(e => [`  - Eternity ${e.nummer}: ${e.titel}. ${e.text}`,
+            ...e.baeume.map(b => `    Tree „${b.bezeichnung}“: ${b.importString}`)])]), ""] : []),
       ...(schritte.length ? schritte : ["(keine Schritte)"]),
       ...(offeneHinweise.length ? ["", "## In dieser Reality nicht mehr erreichbar", ...offeneHinweise] : []),
       "",

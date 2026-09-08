@@ -293,7 +293,16 @@
       <h4>${schuetze(a.zeitpunkt)}: r${schuetze(a.id)} „${schuetze(a.name)}“</h4>
       <p>${schuetze(a.text)}</p>
       ${a.anleitung.length ? `<details class="aufklappen"><summary>Anleitung für r${schuetze(a.id)}</summary>
-        <ol class="handgriffe">${a.anleitung.map(text => `<li>${schuetze(text)}</li>`).join("")}</ol></details>` : ""}
+        <ol class="handgriffe">${a.anleitung.map(text => `<li>${schuetze(text)}</li>`).join("")}</ol>
+        ${a.etappen?.length ? `<div class="r143-ziel">
+          <label for="r143-exponent">Zuletzt erzielter EP-Exponent</label>
+          <p id="r143-ziel-hilfe">Unter Statistics → Past Prestige Runs „Showing total resource gain“ wählen. Den neuesten EP-Gewinn bei Eternities ablesen: Bei 2,5e1000 nur 1000 eintragen. Kein neuer Save nötig.</p>
+          <input id="r143-exponent" type="text" inputmode="numeric" autocomplete="off" aria-describedby="r143-ziel-hilfe">
+          <output for="r143-exponent" aria-live="polite">Trage den Exponenten deiner ersten Eternity ein.</output>
+        </div>
+        <ol class="r143-etappen">${a.etappen.map(e => `<li><h5>Eternity ${e.nummer}: ${schuetze(e.titel)}</h5>
+          <p>${schuetze(e.text)}</p>${e.baeume.map(b => baumMarkup(b.bezeichnung, b.importString)).join("")}</li>`).join("")}</ol>` : ""}
+        </details>` : ""}
     </li>`).join("");
 
     if (aktuellerPlan.hinweise.length) {
@@ -495,6 +504,19 @@
   /* ---------------- Ereignisse ---------------- */
 
   function verdrahte() {
+    knoten.achievementListe.addEventListener("input", ereignis => {
+      const eingabe = ereignis.target;
+      if (eingabe.id !== "r143-exponent") return;
+      const wert = eingabe.value.trim();
+      const exponent = Number(wert);
+      const gueltig = /^\d+$/.test(wert) && Number.isSafeInteger(exponent + 311);
+      const ausgabe = eingabe.closest(".r143-ziel").querySelector("output");
+      ausgabe.textContent = gueltig
+        ? `Nächste Eternity: mindestens e${exponent + 311} EP Gewinn im Eternity-Knopf. Danach den tatsächlich erzielten Exponenten hier ersetzen.`
+        : wert ? "Bitte nur die ganze Zahl nach dem e eingeben, zum Beispiel 1000."
+          : "Trage den Exponenten deiner ersten Eternity ein.";
+      eingabe.setAttribute("aria-invalid", String(Boolean(wert) && !gueltig));
+    });
     knoten.savePruefen.addEventListener("click", () => werteAus(knoten.saveText.value));
     knoten.saveText.addEventListener("keydown", ereignis => {
       if ((ereignis.ctrlKey || ereignis.metaKey) && ereignis.key === "Enter") {
