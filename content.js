@@ -383,6 +383,7 @@
         "Eternity: Drück im ersten dilatierten Lauf Eternity, sobald der Knopf verfügbar ist. In späteren Läufen kaufst du unter Time Dilation zuerst das nächste ×3-TP-Upgrade.",
         "{tdHandgriff}",
         "Für EP außerhalb von Dilation: Respec time studies aktivieren und den dilatierten Lauf mit Eternity beenden. Erst danach den EP-Push-Baum importieren; ein Import allein entfernt keine alten Studies.",
+        "{activeHandgriff}",
         "Vor dem nächsten dilatierten Lauf erneut Respec aktivieren, außerhalb von Dilation eternitieren und den Dilation-Baum laden. Erst dann Dilate time drücken. Nach r137 fast immer in Dilation bleiben und nur für einen EP-/TD-Push wechseln."
       ],
       fertigWenn: "Die Eternity beendet ist und dein Bestand an Tachyon Particles gestiegen ist.",
@@ -413,6 +414,7 @@
         + "der Reality-Knopf auch keine Reality Machines ab.",
       soGehts: [
         "Respec time studies aktivieren, mit Eternity aus Dilation gehen und erst dann den EP-Push-Baum unten laden. Ein Import ersetzt keine bereits gekauften Studies.",
+        "{activeHandgriff}",
         "Push bis der Rekord dieser Reality e4000 EP erreicht; dir fehlen e{fehlendeEP}.",
         "Wechsel zwischendurch zurück in den Dilation-Zyklus, wenn der Push stockt.",
       ],
@@ -458,6 +460,7 @@
         + "Dafür brauchst du {zielRM} weitere RM. Der EP-Richtwert berücksichtigt die Grundformel; die Anzeige im Spiel entscheidet über den Reset.",
       soGehts: [
         "Time Studies respecen und den laufenden Dilation-/Eternity-Lauf mit Eternity beenden. Dann den EP-Push-Baum unten laden und außerhalb von Dilation bleiben.",
+        "{activeHandgriff}",
         "Push den Rekord dieser Reality bis mindestens e{zielEP} EP.",
         "Empfehlung: Warte, bis der Reality-Knopf mindestens {zielRM} RM anzeigt. Dann ist zusammen mit deinen {bankRM} RM genug für {zielKauf} da. Ein früherer Reset ist möglich, sobald die Reality-Study gekauft ist, finanziert aber noch nicht die ganze Liste.",
         "Nach weiterem Push den Save neu einlesen: Der Guide zeigt dann die Käufe mit dem neuen Gesamtbestand und die aktuelle Glyph-Auswahl.",

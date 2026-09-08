@@ -2118,19 +2118,22 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   const data = window.EC_GUIDE_DATA;
   const cost = tree => tree.split("|")[0].split(",").reduce((sum, id) => sum + data.studyCosts[id], 0);
   let tree = data.dilationTrees[ep ? "epPush" : active ? "atLeastOneMillion" : "underOneMillion"];
-  // Die Pin-Strings enthalten einen optionalen dritten Pfad am Ende. Ohne
-  // Split diesen ganz weglassen, statt einen stillen Teilimport anzuleiten.
-  if (!split && (ep || active)) tree = tree.replace(ep ? ",71,81,91,101|0" : ",72,82,92,102|0", "|0");
-  if (ep && perks.includes(31) && !perks.includes(70)) tree = tree.replace("121,131,141", "122,132,142");
+  // EP-Push waehrend der Dilation-Phase: Active auch mit PASS ohne ACT.
+  // Den dritten Dimensionspfad nur mit Split und ausreichendem Budget kaufen.
+  const dritterPfad = ep ? ",71,81,91,101" : ",72,82,92,102";
+  tree = tree.replace(`${dritterPfad}|0`, "|0");
+  const mitSplit = tree.replace("|0", `${dritterPfad}|0`);
+  if (split && cost(mitSplit) <= totalTT) tree = mitSplit;
   if (!ep && !active && perks.includes(31)) tree = tree.replace("123,133,143", "122,132,142");
   if (!(clears[4] > 0 || perks.includes(57))) tree = tree.replace(",62,", ",");
   if (cost(tree) <= totalTT) return tree;
-  if (ep) return data.planFarmTree(null, totalTT, clears, perks);
+  if (ep) return data.planFarmTree(null, totalTT, clears, perks)?.replace(/\b(122|132|142)\b/g, id => Number(id) - 1) ?? null;
 
   // Discord: "Buying Dilation early". Mit kleinem Bestand AD+Idle;
   // ab 2945 TT haben TS192+TS233 Vorrang, darunter die Reihen 19/21.
   let ids = data.lateEpFarmRoadmap[0].tree.split("|")[0]
     .replace("73,83,93,103", "71,81,91,101").replace("121,131,141", "123,133,143");
+  if (active) ids = ids.replace("123,133,143", "121,131,141");
   if (!active && perks.includes(31)) ids = ids.replace("123,133,143", "122,132,142");
   if (!(clears[4] > 0 || perks.includes(57))) ids = ids.replace(",62,", ",");
   const priority = totalTT >= 2945

@@ -410,6 +410,14 @@
       + (DATEN.nodeCosts[p.currentChallenge?.eternityUnlocked] ?? 0)
     : p.totalTT ?? 0));
 
+  function activeHandgriff(p) {
+    return (hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal. "
+      : "Automatic Eternity auf „Eternity at X EP“ mit 0 stellen; Dynamic amount und Time-Study-Respec ausschalten. Einschalten und zehn kurze Eternities abwarten (im Schnitt höchstens fünf reale Sekunden, TS121 zeigt ×50 EP). ")
+      + "Danach Eternity-Autobuyer für den Push ausschalten. "
+      + (hat(p.achievementIds, 138) ? "Dank r138 automatische Replicanti-Galaxien eingeschaltet lassen."
+        : "Replicanti-Galaxien mit R kaufen (R halten → H → R loslassen → Escape).");
+  }
+
   function epFarmAufbau(p, zielTT) {
     const budget = studyBudget(p);
     const tree = DATEN.planFarmTree(null, budget, p.clears, p.perks);
@@ -441,7 +449,7 @@
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
       ...(hat(p.perks, 31) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree verwenden; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen."] : []),
-      ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${hat(p.perks, 70) ? "ACT hält die Active-Multiplikatoren maximal." : "Automatic Eternity auf „Eternity at X EP“ mit 0 stellen, einschalten und zehn kurze Eternities für TS121 abwarten."} Danach Eternity-Autobuyer aus und Replicanti-Galaxien mit R kaufen.${hat(p.achievementIds, 138) ? " r138 automatisiert die Active-RGs." : ""}`] : []),
+      ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${activeHandgriff(p)}`] : []),
       ...(studies.has(181) ? ["Ohne TS181 nach vollen Replicanti-Galaxien crunchen. Sobald TS181 im Baum steht: Crunch-Autobuyer ausschalten, Dimboost/Galaxy unbeschränkt auf 0 s, Eternity-Autobuyer für den Push aus."]
         : studies.has(61) ? ["Nach vollen Replicanti-Galaxien crunchen; Eternity-Autobuyer für den abschließenden EP-Push ausschalten."] : []),
       ...(autoFarm ? [autoFarm] : []),
@@ -1047,14 +1055,15 @@
     if (!frischerLauf && !glyphSetAusBestand(p, empfohlenerGlyph(p).glyph)) return null;
     const zielwerte = rmZielwerte(p);
     if (!frischerLauf && gewinn < zielwerte.zielRM) {
+      const { epBaum, epHandgriff } = dilationAufbau(p);
       /* Nach weiterem EP-Farmen aendern sich RM und Glyph-Angebote. Erst neu
          einlesen, bevor eine konkrete Auswahl oder Kaufliste versprochen wird. */
       return {
         phase: "reality", meilenstein, hinweise: [],
         schritte: [leererSchritt(KONKRETE_SCHRITTE.realityRm.schrittId, "realityRm", {
-          werte: { standRM: gewinn, ...zielwerte },
+          werte: { standRM: gewinn, ...zielwerte, activeHandgriff: epHandgriff },
           baeume: [{ bezeichnung: "EP-Push-Baum",
-            importString: dilationAufbau(p).epBaum }].filter(b => b.importString),
+            importString: epBaum }].filter(b => b.importString),
           baeumeSichtbar: true,
         })],
       };
@@ -1281,29 +1290,35 @@
   function dilationAufbau(p) {
     const budget = studyBudget(p);
     // Achievements bleiben über Realities erhalten, Dilation-Fortschritt nicht.
-    // Pins: zunächst Idle unter 1 Mio.; Active nach zwei erfolgreichen Läufen.
-    const passive = hat(p.perks, 31) && !hat(p.perks, 70);
-    const active = !passive && ((p.resources?.eternities ?? 0) >= 1_000_000 || (p.recentDilationCompletions ?? 0) >= 2
-      || ((p.resources?.tachyonParticles ?? 0) > 0 && hat(p.studies, 121)));
+    // Pins: erster Lauf Idle/PASS; danach Active unabhaengig von PASS/ACT.
+    // r138/Split mit TP belegen auch dann Fortschritt, wenn die letzten zehn
+    // Eternities keine dilatierten Abschluesse mehr enthalten.
+    const active = (p.resources?.eternities ?? 0) >= 1_000_000 || (p.recentDilationCompletions ?? 0) >= 2
+      || ((p.resources?.tachyonParticles ?? 0) > 0
+        && (hat(p.achievementIds, 138) || p.hasDilationStudySplit || hat(p.studies, 121)));
     const optionen = { active, split: p.hasDilationStudySplit };
     const farmBaum = DATEN.planDilationTree(budget, p.clears, p.perks, optionen);
     const epBaum = DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, ep: true });
-    const alternative = !active && !passive ? DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, active: true }) : null;
+    const alternative = !active ? DATEN.planDilationTree(budget, p.clears, p.perks, { ...optionen, active: true }) : null;
     const activeBaum = alternative?.split("|")[0].split(",").includes("121") ? alternative : null;
     const hinweis = [
       !p.hasDilationStudySplit ? "Ohne Time Study Split lassen die Imports den noch gesperrten dritten Dimensionspfad weg." : "",
-      budget < 7858 ? `Für deine ${zahl(budget)} verfügbaren TT ist der Dilation-Baum verkürzt; er priorisiert AD+${hat(p.perks, 31) && !active ? "Passive mit PASS" : "Idle"} und ab 2.945 TT TS192 + TS233.` : "",
+      budget < 7858 ? `Für deine ${zahl(budget)} verfügbaren TT ist der Dilation-Baum verkürzt; er priorisiert AD+${active ? "Active" : hat(p.perks, 31) ? "Passive mit PASS" : "Idle"} und ab 2.945 TT TS192 + TS233.` : "",
       activeBaum ? "Nach den ersten zwei erfolgreichen Dilation-Läufen auf den zusätzlichen Active-Tree wechseln, auch unter 1 Mio. Eternities. Mit PASS eignet sich bereits der erste Passive-Lauf." : "",
+      active && hat(p.perks, 31) ? "Für deinen fortgeschrittenen Dilation-Aufbau und den EP-/RM-Push Active verwenden, auch mit PASS ohne ACT. Dafür keine Million Eternities farmen." : "",
     ].filter(Boolean).join(" ");
-    return { farmBaum, epBaum, activeBaum, hinweis };
+    const epHandgriff = `Nach dem Import des EP-Push-Baums außerhalb von Dilation: ${activeHandgriff(p)} Crunch-Autobuyer ausschalten (TS181).`;
+    return { farmBaum, epBaum, activeBaum, hinweis, epHandgriff };
   }
 
   /* Nach dem Dilation-Unlock: Tachyon-Partikel und Dilated Time aufbauen.
      Ein noch erreichbares RU13-Ziel sperrt dabei den Kauf von TD5 bis TD8. */
   function dilationZyklusSchritte(p) {
-    const { farmBaum, epBaum, activeBaum, hinweis } = dilationAufbau(p);
+    const { farmBaum, epBaum, activeBaum, hinweis, epHandgriff } = dilationAufbau(p);
     const epStand = Math.max(0, Math.floor(p.maxEPExponent ?? 0));
     const rmZiel = (p.realities ?? 0) > 0 ? rmZielwerte(p, false) : null;
+    const tdGesperrt = ru13NochMoeglich(p);
+    const glyphZiel = !hat(p.realityUpgrades, 9) && !hat(p.realityUpgradeUnlocks, 9) && ru9NochMoeglich(p);
     const ersterLauf = !(p.resources?.tachyonParticles > 0);
     const budget = studyBudget(p);
     const idleFehlt = (p.resources?.eternities ?? 0) < 1_000_000
@@ -1330,6 +1345,7 @@
         "Außerhalb von Dilation Respec time studies aktivieren, Eternity drücken und den Dilation-Baum unten importieren. Danach Dilate time drücken.",
         "Diesen neuen Lauf mit dem Dilation-Baum wachsen lassen, bis der Eternity-Knopf verfügbar ist (etwa 1,79e308 IP). Dann Eternity drücken und den Save neu einlesen.",
         "{tdHandgriff}",
+        "{activeHandgriff}",
       ],
     } : {
       kurz: ersterLauf ? "Lass deinen laufenden Dilation-Versuch bis zu den ersten Tachyon Particles weiterlaufen."
@@ -1342,6 +1358,7 @@
           : "Nach dem nächsten ×3-TP-Kauf den Lauf mit Eternity beenden, sobald dabei zusätzliche Tachyon Particles angezeigt werden. Anschließend mit dem Dilation-Baum neu starten; EP nur außerhalb von Dilation pushen.",
         ...(!ersterLauf ? ["Falls du dabei den Baum wechseln willst: vor dieser Eternity Respec time studies aktivieren. Erst nach dem Ende des dilatierten Laufs den EP-Push-Baum importieren; vor der Rückkehr zu Dilation außerhalb erneut respecen und eternitieren, dann den Dilation-Baum laden."] : []),
         "{tdHandgriff}",
+        "{activeHandgriff}",
       ],
     } : {};
     return [leererSchritt(KONKRETE_SCHRITTE.realityDilationZyklus.schrittId, "dilationZyklus", {
@@ -1350,13 +1367,15 @@
          Kommazahl, gemeint ist e1320. */
       werte: {
         standEP: String(epStand),
-        tdHandgriff: ru13NochMoeglich(p)
+        activeHandgriff: epHandgriff,
+        tdHandgriff: tdGesperrt
           ? "Dimensions → Time Dimensions: TD5–8 nicht kaufen, bis du e4000 EP erreicht, eternitiert und The Telemechanical Process (Reihe 3, Spalte 3) unter Reality → Upgrades freigeschaltet hast."
           : "Eternity → Time Studies: Kauf die Dilation-Studies für TD5–8, sobald genügend freie Time Theorems da sind. Dimensions → Time Dimensions: Kauf die freigeschalteten Dimensionen.",
       },
       hinweis: (p.dilationActive ? `Im Save läuft dieser Versuch seit ${laufzeit}. ${ersterLauf ? "Noch 0 Tachyon Particles; der erste erfolgreiche Abschluss steht aus. " : ""}` : "")
         + `Zwischenziel: e4000 EP im Rekord dieser Reality; aktuell e${epStand}. `
-        + (rmZiel ? `Reset-Ziel: mindestens ${zahl(rmZiel.zielRM)} RM Gewinn im Reality-Knopf. Zusammen mit deinen ${zahl(rmZiel.bankRM)} RM sind das ${zahl(rmZiel.bankRM + rmZiel.zielRM)} RM für ${rmZiel.zielKauf}. Erst die e4000-EP-Bedingung per Eternity sichern, danach gegebenenfalls TD5–8 und die Reality-Study kaufen. Außerhalb von Dilation mit dem EP-Push-Baum bis zum RM-Ziel weiterspielen, dann die nächste Reality starten. Basis-Richtwert: e${rmZiel.zielEP} EP; die RM-Anzeige im Spiel entscheidet.`
+        + (glyphZiel ? "Für Linguistically Expand (Reihe 2, Spalte 4) bis zur Eternity bei e4000 EP genau den einen Level-3+-Glyph ausgerüstet lassen. Danach ohne Shift Cost: prüfen; die Bedingung bleibt gespeichert. " : "")
+        + (rmZiel ? `Reset-Ziel: mindestens ${zahl(rmZiel.zielRM)} RM Gewinn im Reality-Knopf. Zusammen mit deinen ${zahl(rmZiel.bankRM)} RM sind das ${zahl(rmZiel.bankRM + rmZiel.zielRM)} RM für ${rmZiel.zielKauf}. ${tdGesperrt ? "Erst die e4000-EP-Bedingung per Eternity sichern, danach TD5–8 kaufen. " : "TD5–8 bereits jetzt freischalten und kaufen, sobald TT und EP reichen. "}Die Reality-Study kaufen, sobald ihre Bedingungen erfüllt sind. Außerhalb von Dilation mit dem EP-Push-Baum bis zum RM-Ziel weiterspielen, dann die nächste Reality starten. Basis-Richtwert: e${rmZiel.zielEP} EP; die RM-Anzeige im Spiel entscheidet.`
           : "Ab e4000 EP wirft der Reality-Knopf Reality Machines ab.")
         + (hinweis ? ` ${hinweis}` : ""),
       baeume: [
@@ -1386,7 +1405,7 @@
     const epStand = Math.max(0, Math.floor(p.maxEPExponent ?? 0));
     const schritte = dilationZyklusSchritte(p);
     const meilenstein = { ...MEILENSTEINE.find(m => m.id === "dilation") };
-    const { epBaum, hinweis } = dilationAufbau(p);
+    const { epBaum, hinweis, epHandgriff } = dilationAufbau(p);
 
     const naechsteTd = TD_STUDIES.find(eintrag => !gekauft.has(eintrag.id));
     if (naechsteTd) {
@@ -1406,6 +1425,7 @@
         werte: {
           standEP: String(epStand),
           fehlendeEP: String(Math.max(0, 4000 - epStand)),
+          activeHandgriff: epHandgriff,
         },
         baeume: epBaum ? [{ bezeichnung: `EP-Push-Baum bis e4000 EP · ${zahl(baumKosten(epBaum))} TT`, importString: epBaum }] : [],
         baeumeSichtbar: true,
@@ -1560,13 +1580,14 @@
       const minimum = rmZielwerte(p, false);
       const gewinn = Math.max(0, Math.floor(p.gainedRMEstimate ?? 0));
       if (gewinn < minimum.zielRM) {
+        const { epBaum, epHandgriff } = dilationAufbau(p);
         schritte.push(leererSchritt(KONKRETE_SCHRITTE.realityRm.schrittId, "realityRm", {
-          werte: { standRM: gewinn, ...minimum },
+          werte: { standRM: gewinn, ...minimum, activeHandgriff: epHandgriff },
           ...(p.realityAvailable ? { inhalt: {
             kurz: `Reality ist schon möglich. Empfehlung: Push von etwa ${zahl(gewinn)} auf ${zahl(minimum.zielRM)} RM Gewinn.`,
           } } : {}),
           baeume: [{ bezeichnung: `EP-Push-Baum bis ${minimum.zielRM} RM`,
-            importString: dilationAufbau(p).epBaum }].filter(b => b.importString),
+            importString: epBaum }].filter(b => b.importString),
           baeumeSichtbar: true,
         }));
       }
