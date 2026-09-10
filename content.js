@@ -1172,6 +1172,62 @@
     95: "r95 „Is this safe?“ fehlt: Starte mit Big Crunch eine neue Infinity. Kauf Replicanti-Chance und -Intervall, bis du innerhalb einer Stunde das Replicanti-Limit (ca. 1,79e308) erreichst. Kauf dabei keine Replicanti-Galaxie; Auto Galaxy bleibt aus. Danach bleiben die Replicanti bei Big Crunch erhalten und du musst sie nicht jedes Mal neu aufbauen.",
   };
 
+  // Mechanik und Belohnung je EC, statt einer gemeinsamen Begruendung fuer alle Trees.
+  const EC_GRUENDE = {
+    1: ["Time Dimensions sind ausgeschaltet. Der Run braucht deshalb AD-/ID-Produktion statt eines normalen TD-Farm-Aufbaus.", "Der Abschluss verstärkt Time Dimensions abhängig von der Dauer der Eternity und hilft damit beim anschließenden EP-Farmen."],
+    2: ["Infinity Dimensions sind ausgeschaltet. Time Dimensions und zusätzliche Tickspeed-Upgrades tragen den Run; deshalb wäre ein ID-Push-Tree hier wirkungslos.", "Die Belohnung verstärkt ID1 abhängig von Infinity Power für die folgenden Läufe."],
+    3: ["AD5–8 produzieren nichts und Sacrifice ist gesperrt. Der Tree stärkt die verbleibende AD1–4-Kette; Boni auf Sacrifice tragen hier nicht.", "Jeder Abschluss erhöht den Multiplikator für gekaufte AD-Zehnerpakete und erleichtert die nächsten Produktions-Pushes."],
+    4: ["Die erlaubte Infinity-Anzahl ist begrenzt. Deshalb erst genug AM und Replicanti-Galaxien aufbauen, bevor du einen der wenigen Crunches verbrauchst.", "Der Abschluss verstärkt Infinity Dimensions abhängig von ungenutzten IP."],
+    5: ["Galaxien und Dimboosts verteuern sich schon sehr früh. Der teure EC-Knoten lässt zunächst wenig TT für Studies; der Run-Tree konzentriert das Restbudget auf die noch wirksame Produktion.", "Die Belohnung verschiebt die Distant-Galaxy-Skalierung pro Abschluss um fünf Galaxien. EC5x1 erlaubt außerdem TS62 auch ohne EC5R."],
+    6: ["Normale Antimatter-Galaxien sind gesperrt, Replicanti-Galaxien dafür billiger. Der Run lebt vom Aufbau dieser RGs; ein sinkender TS141-Bonus allein ist deshalb kein Grund für einen sofortigen Crunch.", "Der Abschluss senkt die Kostenskalierung der Antimatter Dimensions."],
+    7: ["TD1 erzeugt ID8 und ID1 erzeugt AD7; Tickspeed wirkt direkt auf alle drei Dimensionsketten. Der AD-Pfad verstärkt das Ende dieser veränderten Kette statt normaler TD-/ID-Push-Boni.", "Die Belohnung lässt TD1 auch außerhalb der Challenge ID8 erzeugen. Mit EC7x5 wird diese Verbindung besonders stark."],
+    8: ["Nur 50 ID-Käufe und 40 Replicanti-Upgrades sind erlaubt. ID1-Käufe liefern direkt Infinity Power; das begrenzte Replicanti-Budget verteilt sich auf Chance, RGs und Intervall. Ohne r138 verlangsamt TS133 Replicanti unter dem Limit; der spätere Import bewahrt deshalb zunächst den schnellen Aufbau und nutzt danach die stärkeren RGs.", "Der Abschluss macht Replicanti-Galaxien durch Infinity Power stärker."],
+    9: ["Tickspeed kann nicht gekauft werden. Zusätzliche Tickspeed-Upgrades aus Time Shards bleiben verfügbar, und Infinity Power stärkt hier Time Dimensions. Deshalb sind TD-Aufbau und etwas Wachstum vor dem Crunch entscheidend.", "Die Belohnung verstärkt Infinity Dimensions abhängig von Time Shards."],
+    10: ["Time und Infinity Dimensions sind ausgeschaltet. Stattdessen verstärkt die Infinity-Anzahl die Antimatter Dimensions extrem. Der AD-Run-Tree nutzt diese noch wirksame Kette; TS31 verstärkt den Infinity-Bonus.", "EC10x1 öffnet die Studies unter TS181. Die weitere Belohnung verstärkt Time Dimensions abhängig von Infinities."],
+    11: ["Der Eintritt verlangt ausschließlich den AD-Pfad. Fast alle Dimensionsboni sind abgeschaltet; Infinity Power und Dimboosts auf ADs bleiben. Darum helfen Replicanti-Aufbau und Dimboost-Stärke mehr als zusätzliche gewöhnliche Dimensionsmultiplikatoren.", "Jeder Abschluss senkt die Tickspeed-Kostenskalierung. Ohne DILR brauchst du EC11x5 auch für Dilation."],
+    12: ["Der Eintritt verlangt ausschließlich den TD-Pfad. Das Spiel läuft tausendmal langsamer und hat ein strenges Zeitlimit; in späteren Realities sind andere Spielgeschwindigkeitseffekte deaktiviert. Der Tree muss das IP-Ziel daher mit Produktion innerhalb dieses Limits erreichen.", "Der Abschluss senkt die Kostenskalierung der Infinity Dimensions. Ohne DILR brauchst du EC12x5 auch für Dilation."],
+  };
+
+  function baumGruende(schritt) {
+    const perks = schritt.erklaerPerks ?? [];
+    return (schritt.baeume ?? []).map(baum => {
+      const s = new Set(baum.importString.split("|")[0].split(",").map(Number));
+      const ec = Number(schritt.werte?.ec);
+      const run = schritt.gruppe === "ecRun" || schritt.baumBeibehalten;
+      const gruende = [];
+      if (schritt.eigeneRoute) {
+        if (s.has(21)) gruende.push("TS21 verbessert den Replicanti-Multiplikator, der in Pelle besonders wichtig bleibt");
+        if (s.has(71)) gruende.push("AD stärkt die direkte Produktion trotz Pelles geschwächter ID-Boni");
+        if (s.has(73)) gruende.push("TD baut Time Shards auf und profitiert ab TS171 von günstigeren zusätzlichen Tickspeed-Upgrades");
+        if (s.has(123)) gruende.push("Idle passt zu den längeren Pushes und stärkt auch die zusätzlichen RGs aus Rift 2");
+        return `${baum.bezeichnung}: ${gruende.join(". ") || "Die Verbindungsknoten bleiben auch dort nötig, wo Pelle ihren eigenen Bonus deaktiviert"}.`;
+      }
+      if (s.has(71)) gruende.push(run && [3,7,10,11].includes(ec) ? "Der AD-Pfad stärkt die in dieser Challenge entscheidende Antimatter-Kette" : "Der AD-Pfad stärkt den direkten Antimatter-Push");
+      if (s.has(72)) gruende.push(run && ec === 1 ? "Der ID-Pfad liefert Infinity Power, während TDs ausgeschaltet sind" : "Der ID-Pfad verstärkt Infinity Power und damit die Antimatter Dimensions");
+      if (s.has(73)) gruende.push(s.has(171) ? "TD + TS171 erzeugt mehr zusätzliche Tickspeed-Upgrades aus Time Shards" : "Der TD-Pfad baut Time Shards und zusätzliche Tickspeed-Upgrades auf");
+      if (s.has(122)) gruende.push(perks.includes(31) ? "Passive nutzt PASS: TS122 ×50 EP, TS142 ×e50 IP und mit TS132 dreifache Replicanti-Geschwindigkeit, ohne TS121-Vorbereitung" : "Passive liefert seine IP-/EP-Boni ohne vorbereitende kurze Eternities oder langen Idle-Aufbau");
+      if (s.has(121)) gruende.push(perks.includes(70) ? "Active nutzt ACT für sofort maximale Study-Boni" : "Active nutzt den hohen TS141-IP-Bonus; TS121 erreicht ×50 EP erst nach zehn kurzen Eternities, RGs musst du ohne r138 selbst kaufen");
+      if (s.has(123)) gruende.push("Idle lässt TS123/143 mit der Laufzeit wachsen und eignet sich deshalb für den hier vorgesehenen längeren Aufbau");
+      if (s.has(32) && schritt.gruppe === "ecUnlock" && ec === 4) gruende.push("TS32 multipliziert die Infinities pro Crunch und verkürzt genau die EC4-Freischalt-Farm");
+      if (s.has(62)) gruende.push("TS62 macht Replicanti dreimal schneller");
+      if (s.has(181)) gruende.push("TS181 erzeugt IP ohne Crunch; ein automatischer Crunch würde den laufenden AM-Aufbau unnötig zurücksetzen");
+      if (s.has(192) && s.has(233)) gruende.push("TS192 erlaubt Replicanti über dem bisherigen Limit, TS233 senkt mit diesen Replicanti die Kosten weiterer RGs");
+      if (s.has(222)) gruende.push("TS222 senkt die Kostenskalierung der Dimboosts und erleichtert zusätzliche Boosts");
+      if (s.has(223)) gruende.push("TS223 verschiebt die Distant-Galaxy-Skalierung fest um sieben Galaxien; das hilft schon bei wenigen Dimboosts");
+      if (s.has(224)) gruende.push("TS224 verschiebt die Distant-Galaxy-Skalierung abhängig von Dimboosts für den EP-Push");
+      if (s.has(232)) gruende.push("TS232 verstärkt alle Galaxien anhand der Anzahl deiner Antimatter-Galaxien");
+      if (s.has(234)) gruende.push("TS234 wendet Sacrifice auch auf AD1 an und stärkt so den EP-Push");
+      if (!gruende.length) {
+        if (s.has(11)) gruende.push("TS11 nutzt Tickspeed für einen stärkeren TD1-Multiplikator und damit mehr Time Shards");
+        if (s.has(21)) gruende.push("TS21 verbessert den Replicanti-Multiplikator auf Infinity Dimensions");
+        if (s.has(42)) gruende.push("TS42 senkt die Galaxienkosten");
+        if (s.has(51)) gruende.push("TS51 liefert ×1e15 IP für den nächsten IP-/EP-Push");
+        if (s.has(61)) gruende.push("TS61 verzehnfacht den EP-Gewinn");
+      }
+      return `${baum.bezeichnung}: ${gruende.join(". ")}.`;
+    });
+  }
+
   function ecEtappeFuer(schritt) {
     const text = textFuer(schritt);
     const w = schritt.werte;
@@ -1209,6 +1265,43 @@
     return text;
   }
 
+  // Ein Schritt kann denselben Basistitel fuer verschiedene Handlungen nutzen.
+  // Deren Begruendung gehoert zur konkreten Handlung, nicht nur zur Spielphase.
+  const GRUPPEN_GRUENDE = {
+    c8Farm: "In C8 wächst Sacrifice viel stärker als im normalen frühen Lauf. Wiederholte Opfer tragen den schnellen IP-Aufbau; die ersten günstigen Infinity-Upgrades verstärken ihn, bis das Upgrade für doppelte Galaxienstärke finanzierbar ist.",
+    bulkBoost: "Buy max kauft mehrere erreichbare Dimboosts zusammen. Dadurch fällt bei jedem Wiederaufbau die Wartezeit für einzeln ausgeführte Boosts weg; die gesparten Sekunden verbessern wiederholte IP-Läufe.",
+    galaxyBoost: "50 % stärkere Galaxien verstärken die Wirkung der Tickspeed-Käufe auf die gesamte AD-Kette. Dieser dauerhafte Bonus hilft sowohl beim nächsten AM-Rekord als auch bei den folgenden Infinity Challenges.",
+    breakKaeufe: "Die günstigen Break-Upgrades multiplizieren alle Antimatter Dimensions anhand verschiedener schon wachsender Werte. Kurze Läufe am IP/min-Peak finanzieren diese Multiplikatoren; danach lohnt der längere AM-Push für ID1.",
+    idFreischalten: "ID1 benötigt sowohl e1100 Antimatter für die Freischaltung als auch 1e8 IP für den Kauf. Sie produziert Infinity Power, die alle Antimatter Dimensions verstärkt. Deshalb vor diesem AM-Push den kurzen Crunch-Timer ausschalten.",
+    normalRun: "Diese Challenge läuft bereits. Ein Wechsel würde ihren Aufbau abbrechen; ihr Abschluss schaltet den zugehörigen Autobuyer frei. Die Kaufreihenfolge berücksichtigt die Einschränkung dieses laufenden Versuchs.",
+    eternityAbschluss: "Der manuelle Eternity-Klick zahlt die ersten EP dieses Laufs aus. TD1 und Time Studies werden damit bezahlbar. Falls noch ein Reality-Upgrade eine manuelle Eternity verlangt, prüft genau dieser Klick seine Bedingung; der Autobuyer darf ihm nicht zuvorkommen.",
+    teresaRm: "Teresas Behälter öffnet die Reality bei e14 eingegossenen RM. Für RM verstärken Power und Infinity die Produktionsketten, Replication ergänzt ihren Multiplikator. Im getrennten Glyph-Level-Set erhöhen vier Replication-Glyphs den Level-Faktor; Dilation liefert DT und TT, damit bessere Glyphs die folgenden RM-Läufe stärken.",
+    teresaStart: "Teresas Produktion ist eingeschränkt. Drei Replication-Glyphs liefern Replicanti-Geschwindigkeit, Multiplikator und DT für RGs und Dilation; zwei Time-Glyphs verstärken Time Dimensions. Dieses Set unterstützt den EP-/Dilation-Aufbau im gesamten Lauf und ist ein Richtwert aus den geprüften Routen.",
+    teresaDilation: "Der erste Dilation-Zugang in Teresa braucht einen längeren Aufbau. Idle lässt den IP-Bonus wachsen, TS225 gewinnt zusätzliche RGs aus der Replicanti-Menge und TS233 verbilligt RG-Upgrades. EC11x5 und EC12x3 reichen hier für den vorgesehenen Einstieg; weitere ECs vor Dilation verzögern diesen Produktionsschub.",
+    teresaEnde: "Nach dem Dilation-Zugang tragen Tachyon-Galaxien den weiteren Aufbau. Active liefert den EP-Push, TS234 überträgt Sacrifice auf AD1. Der Wechsel zwischen DT/TP und EP finanziert so die höheren Time Dimensions und schließlich den Reality-Abschluss.",
+    effarigOeffnen: "e24 RM im Behälter öffnen Effarig. Replication und Infinity stärken das RM-Set; der getrennte Level-Lauf mit Replication-Faktor und DT erzeugt bessere Glyphs für den nächsten RM-Push. So wächst der Ertrag, statt mit einem unveränderten Set nur auf die Schwelle zu warten.",
+    effarigInfinity: "Effarig begrenzt das wirksame Glyph-Level in diesem Abschnitt. Der direkte AD-Multiplikator auf jedem der fünf Power-Glyphs hilft schon beim frühen AM-Aufbau; hohe Seltenheit verstärkt ihn trotz Level-Kappe. Deshalb zählt genau dieser Effekt mehr als ein höheres nominelles Level.",
+    effarigEternity: "Power mit direktem AD-Multiplikator trägt den Neustart, Infinity mit IP- und Infinity-Anzahl-Bonus den IP-Aufbau. Zwei Replication-Glyphs verstärken den Replicanti-Multiplikator; Dilation mit TT-Erzeugung finanziert die Studies. Deshalb enthält dieses Set mehrere Typen. ID und Idle nutzen Infinity Power und den längeren Aufbau bis Eternity.",
+    effarigLayerDrei: "In EC10 fallen die IDs aus, die sonst Effarigs Produktionsstrafe abschwächen. Gespeicherte Black-Hole-Zeit erhöht beim Entladen den IP-Bonus aus r125 stark genug für diesen Engpass; ein Dilation-Glyph erzeugt die nötigen TT. Die Zeitmechanik steht bereits nach Effarigs Eternity-Abschnitt zur Verfügung.",
+    namelessStart: "Das Glyph-Level wird in diesem Lauf auf mindestens 5000 angehoben. Zusätzliche Level zu farmen hilft daher weniger als die passenden Effekte: Power liefert direkte AD-Multiplikatoren, Time erhöht die Eternity-Anzahl für den weiteren Aufbau. Gespeicherte Zeit wird erst für den späten Engpass gebraucht.",
+    namelessStudy: "Die versteckte TS12 gibt sofort 100 TT. Damit finanzierst du den frühen Study-Aufbau, obwohl die normalen Quellen in dieser Reality stark eingeschränkt sind.",
+    namelessFeel: "FEEL ETERNITY ist eine besondere Puzzle-Freischaltung im sonst vertrauten Break-Infinity-Tab. Ohne diesen Knopf bleibt der vorgesehene Fortschrittsweg gesperrt; zusätzliche normale Produktion ersetzt den Klick nicht.",
+    namelessDilation: "C10 benötigt AD6 für Antimatter-Galaxien und umgeht damit das AD8-Problem dieses Laufs. EC6 verbilligt zugleich Replicanti-Galaxien. Zusammen liefern sie genug Galaxien für die ECs und Dilation; deren TT-Erzeugung macht den nächsten großen Ausbau möglich.",
+    namelessEc1: "EC1 hat hier zusätzliche Abschlüsse über die üblichen fünf hinaus. Deren TD-Belohnung wächst weiter. Der Wechsel zu EC6+C10 liefert neue EP und TT, mit denen weitere EC1-Abschlüsse erreichbar werden.",
+    namelessEnde: "Weitere EC1-Abschlüsse verstärken die Time Dimensions für den abschließenden EC6+C10-Push. Die aufbewahrte Zeit wirkt am späten EC1-Engpass am meisten; nach diesem Ausbau tragen die günstigeren Galaxien in EC6+C10 den Lauf bis zur Reality-Study.",
+    raAlchemy: "Glyph-Level begrenzt die Menge, die du durch Refinement gewinnen kannst. Deshalb zuerst einen höheren Level-Rekord setzen und Ressourcen auffüllen, dann schnelle Realities für die Reaktionen spielen. Die so erzeugten Alchemy-Boni verbessern wiederum RM- und Glyph-Level-Läufe.",
+    raImPush: "e1000 RM ist die Grenze der bisherigen Maschinenwährung. Erst der Ausbau bis zu dieser Grenze öffnet Imaginary Machines; bessere Glyphs, Sacrifice und Alchemy erhöhen den RM-Ertrag für diesen Schritt.",
+    imFarm: "Dein IM-Limit liegt unter dem nötigen Kaufpreis. Warten kann dieses Limit nicht überwinden: Höherer projizierter RM-Ertrag hebt es an. Glyph-Level erhöht zugleich die Alchemy-Kappen; gefüllte Alchemy, Sacrifice und ein stärkerer Teresa-Bonus verstärken danach den RM-/IM-Push.",
+    laitelaProduktion: "Kürzere DMD-Intervalle und mehr Produktion liefern schneller Dark Matter und Dark Energy. Ascend erhöht die nächste Produktionsstufe; Annihilation tauscht den Wiederaufbau gegen einen höheren Multiplikator. Diese Boni machen den nächsten Lai'tela-Abschluss unter 30 Sekunden erreichbar, der eine weitere Dimension deaktiviert.",
+    realityInfinityFarm: "The Boundless Flow erzeugt nach dem Kauf laufend Infinities. Für seine Bedingung muss die Anzahl gebankt sein: TS191 übernimmt 5 % beim Eternity-Klick. TS32 und Innumerably Construct erhöhen die Infinities pro Crunch, statt dich Billionen einzelne Crunches spielen zu lassen.",
+    realityEternityFarm: "The Eternal Flow erzeugt nach dem Kauf Eternities pro Sekunde entsprechend deiner Reality-Anzahl. Für die 10-Millionen-Bedingung erhöhen kurze Resets, Eternal Amplifier und ein eventuell bereits aktiver Eternity-Glyph die gezählte Anzahl schneller als lange EP-Pushes.",
+    realitySacrifice: "Scour to Empower öffnet dauerhafte Glyph-Sacrifice-Boni. Vorher brauchst du 30 Glyphs beim Reality-Abschluss; Löschen bringt bis dahin keinen Bonus und würde den Zähler wieder senken. Danach kannst du unbenötigte Exemplare in dauerhafte Stärke verwandeln.",
+    realityBh2: "Parity of Singularity öffnet das zweite Black Hole, das während der Aktivität des ersten zusätzlich beschleunigt. Die Bedingung zählt beschleunigte Spielzeit seit dem ersten Unlock; daher arbeitet normales Spielen mit dem ersten Black Hole direkt auf die 100 Spieltage hin.",
+    pelleDilationUnlock: "Der fünfte Strike macht Dilation dauerhaft. Voller Rift 1 und Rift 3 sowie die Dilation-Study bereiten diesen Übergang vor; danach stammen die nächsten großen Boni aus DT, Tachyon-Galaxien und Rift 5.",
+    pelleDilation: "In Pelles permanenter Dilation sind zusätzliche DT die Kaufwährung für den nächsten Fortschritt. Der Dilation-Glyph steigert genau diese Produktion; ein normales EP-Farmset hilft an diesem Engpass weniger. Ein kurzer Wechsel zu Infinity dient gezielt zusätzlichen Remnants.",
+    pelleUpgrades: "Mehr TP erhöhen die DT-Produktion, DT-Multiplikatoren verstärken sie direkt, und Tachyon-Galaxien treiben den AM-/EP-Aufbau. Deshalb haben die günstigen Produktionsmultiplikatoren Vorrang; die ausdrücklich genannten TG-Ausnahmen liefern früher genug Galaxien für den nächsten Schub.",
+  };
+
   function textFuer(schritt) {
     if (!SCHRITTE[schritt.id]) return null;
     if (schritt.etappen) {
@@ -1217,10 +1310,21 @@
         kurz: `${schritt.etappen.at(-1).baeume.length || schritt.etappen.at(-1).baumBeibehalten ? "" : "Laufenden "}${schritt.werte.run} abschließen · ${schritt.werte.goal}`,
         soGehts: texte.flatMap(t => t.soGehts.map((zeile, i) => i === 0 ? `${t.kurz}: ${zeile}` : zeile)),
         falle: [...new Set(texte.map(t => t.falle).filter(Boolean))].join(" "),
-        warum: "Der Reihe nach abarbeiten: TT sammeln, falls nötig freischalten, dann den Lauf abschließen. Spätere Schritte setzen die vorherigen Abschlüsse und TT-Ziele voraus. Ein neuer Save ist erst nach der Folge oder bei einer Abweichung nötig.",
+        warum: texte.at(-1).warum,
+        warumDetails: [...new Set(texte.flatMap((t, i) => [
+          ...(i < texte.length - 1 ? [t.warum] : []), ...(t.warumDetails ?? []),
+        ]))],
       };
     }
     const basis = { ...SCHRITTE[schritt.id], ...schritt.inhalt };
+    if (GRUPPEN_GRUENDE[schritt.gruppe]) basis.warum = GRUPPEN_GRUENDE[schritt.gruppe];
+    if (EC_GRUENDE[schritt.pelleEc]) basis.warum += " " + EC_GRUENDE[schritt.pelleEc][0];
+    const ec = Number(schritt.werte?.ec);
+    if (EC_GRUENDE[ec] && ["ecRun", "ecUnlock"].includes(schritt.gruppe)) {
+      basis.warum = schritt.gruppe === "ecRun"
+        ? `${schritt.werte.run} ist die nächste offene Stufe der zu deinen bisherigen Abschlüssen passenden Route. ${EC_GRUENDE[ec].join(" ")}`
+        : `Für ${schritt.werte.run} fehlt zunächst der Knotenkauf mit der Bedingung ${schritt.werte.unlock}. Der Freischalt-Tree baut diese Ressource außerhalb der Challenge auf; nach dem Kauf bleibt die erfüllte Ressourcenbedingung beim Respec gespeichert. ${schritt.baumBeibehalten ? "Hier sind Freischalt- und Run-Tree gleich, deshalb ist kein zweiter Import nötig." : "Erst der anschließende Run-Tree richtet sich nach der Challenge-Einschränkung."}`;
+    }
     if (schritt.id === "realityGlyphSchwelle" && schritt.zielIds?.length === 1 && schritt.zielIds[0] === "ru13") {
       basis.kurz = "Sichere The Telemechanical Process kostenlos für später.";
       basis.warum = "Du kannst die Freischaltbedingung schon in dieser Reality erfüllen und das Upgrade später für 50 RM kaufen. Die erfüllte Bedingung bleibt über Reality-Resets erhalten. Deine ausgerüsteten Glyphs kannst du dafür behalten; nur TD5–8 sind eingeschränkt.";
@@ -1256,6 +1360,7 @@
       kurz: schritt.saveNeuEinlesen ? "Kauf die Upgrades und lad den Save neu hoch." : fuelle(basis.kurz),
       soGehts: handgriffe.map(fuelle),
       warum: fuelle(basis.warum),
+      warumDetails: [...(basis.warumDetails ?? []), ...baumGruende(schritt)].map(fuelle),
       falle: fuelle(basis.falle),
       fertigWenn: schritt.saveNeuEinlesen ? SCHRITTE.ecSaveNeuEinlesen.fertigWenn : fuelle(basis.fertigWenn),
     };

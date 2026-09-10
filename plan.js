@@ -141,7 +141,7 @@
     }
     if (!kaeufer.length) return null;
     return { ...aktion("ersteRealityUpgradeReihe", "ruReiheEins", "Kauf diese noch fehlenden Start-Upgrades.",
-      kaeufer, "Die genannten Upgrades sind jeweils einmal gekauft.", "Die erste Reihe verstärkt jede weitere Reality. Diese Auswahl passt zu deinem RM-Bestand und bevorzugt die DT-, Replicanti- und TP-Käufe aus den Pins."), kosten: bank - rest, kaufIds };
+      kaeufer, "Die genannten Upgrades sind jeweils einmal gekauft.", "Temporal liefert mehr DT für Dilation-Käufe, Replicative verkürzt den RG-Aufbau und Superluminal erhöht TP für die DT-Produktion. Diese drei verkürzen die langen Phasen der nächsten Reality. Eternal und Boundless erhöhen gezählte Eternities bzw. Infinities für ihre Anforderungen. Die Auswahl gibt nur deine vorhandenen RM aus; bei 3 RM passt DT + TP gemeinsam ins Budget."), kosten: bank - rest, kaufIds };
   }
 
   function ersteInfinitySchritte(p) {
@@ -197,7 +197,16 @@
     const schritt = aktion("infinityChallengesAbarbeiten", "icRun",
       `${laeuft ? "Beende" : "Schließe"} IC${ic.id} bei ${ic.goal} Antimatter${laeuft ? "" : " ab"}.`,
       handgriffe, `IC${ic.id} ist abgeschlossen und du bist wieder außerhalb der Challenge.`,
-      "Diese Infinity Challenge fehlt im aktuellen Durchlauf. Ihre Belohnung verstärkt den folgenden IP-Push. Die Strategie berücksichtigt die ausgerüsteten Glyph-Effekte und ANR; die Reality-Nummer allein beweist keine ausreichende Stärke.");
+      `IC${ic.id} fehlt im aktuellen Lauf. ` + {
+        1: "Die kombinierten Normal-Challenge-Regeln verlangen einen vollständigen Wiederaufbau. Die Belohnung gibt ×1,3 auf Infinity Dimensions je abgeschlossener IC; damit werden auch die folgenden ICs stärker.",
+        2: "Sacrifice wird automatisch alle 400 ms ausgelöst. Der Abschluss verbessert Sacrifice dauerhaft und öffnet dessen Autobuyer; AD8-Nachkäufe halten während des Runs die Produktion am Laufen.",
+        3: "Tickspeed-Käufe geben hier einen AD-Multiplikator statt normaler Geschwindigkeit. Mehr Galaxien verstärken diesen Ersatzbonus. Die Belohnung behält einen entsprechenden Bonus auch außerhalb der IC.",
+        4: "Nur die zuletzt gekaufte Dimension produziert ungebremst. Die Folge AD7 → AD1 reicht die Produktion von oben nach unten weiter; starke Glyph-Boni können diese Handarbeit überflüssig machen. Der Abschluss potenziert alle AD-Multiplikatoren mit 1,05.",
+        5: "Dimensionskäufe verteuern andere Dimensionen mit. Einzelkäufe verhindern unnötige Kaufblöcke, während AD8 weiter Zehnerpakete bekommt. Die Belohnung stärkt Galaxien um 10 % und senkt Galaxien-/Dimboost-Anforderungen.",
+        6: "Matter wächst exponentiell und teilt deine AD-Multiplikatoren. Weiterer Produktionsausbau muss diesen Verlust überholen. Der Abschluss verstärkt Infinity Dimensions anhand von Tickspeed.",
+        7: "Galaxien sind gesperrt, dafür ist der Dimboost-Multiplikator stark erhöht. Deshalb tragen hier Boosts und Tickspeed den Run. Danach steigt der Basis-Dimboost-Multiplikator auf mindestens ×4.",
+        8: "Die Produktion fällt laufend ab und wird durch Dimensions-/Tickspeed-Käufe aufgefrischt. Deshalb regelmäßig weiterkaufen. Die Belohnung verstärkt AD2–7 anhand der Multiplikatoren von AD1 und AD8.",
+      }[ic.id]);
     const zeit = { 2: "bis etwa 5 Minuten", 3: "bis etwa 1 Stunde", 4: "etwa 10–20 Minuten mit der beschriebenen manuellen Kaufstrategie" }[ic.id];
     if (zeit) schritt.inhalt.communityZeit = `Pins: ${zeit} beim ersten Durchlauf und den empfohlenen IP-Werten. Mit späteren Upgrades/Glyphs oft deutlich kürzer; keine Restzeit-Prognose.`;
     return schritt;
@@ -307,7 +316,8 @@
           `Push für IC${ic.id} auf etwa e${ic.ip} IP${verfuegbar ? "" : ` und e${ic.unlock} Antimatter`}.`,
           ["Kauf verfügbare Infinity Dimensions und die bezahlbaren Break-Infinity-Upgrades." + (ic.id === 1 ? " Vor IC1 zuerst das Upgrade für 50 % stärkere Galaxien für 5e11 IP kaufen." : " Für die Antimatter-Freischaltung den Crunch-Autobuyer ausschalten und einen längeren Lauf mit Dimboosts, Galaxien und Sacrifice spielen."),
             `Die IP-Marke ist der Richtwert für einen ersten Durchlauf. ${p.realities > 0 ? "Mit deinen Reality-Boni darfst du IC" + ic.id + " früher versuchen, sobald sie freigeschaltet ist." : "Wechsle zwischen kurzen IP-Läufen und einem längeren Push für die nächste Freischaltung."}`],
-          `IC${ic.id} ist freigeschaltet und du kannst den Lauf versuchen.`));
+          `IC${ic.id} ist freigeschaltet und du kannst den Lauf versuchen.`,
+          `IC${ic.id} braucht e${ic.unlock} Antimatter für die Freischaltung. Die Marke e${ic.ip} IP ist dagegen ein Erfahrungswert für genug Produktionsstärke im ersten Versuch, keine zusätzliche Eintrittsbedingung. Infinity Dimensions erzeugen stärkende Infinity Power; Break-Upgrades verstärken die AD-Kette für diesen AM-Push. Mit starken Reality-Boni kann der Versuch früher gelingen.`));
       }
       schritte.push(icSchritt(p, ic));
       if (schritte.length >= MAX_SICHTBAR) break;
@@ -341,17 +351,15 @@
       schritte.push(einzelGlyph);
       p = { ...p, realityRequirementLocks: [...(p.realityRequirementLocks ?? []), 9] };
     }
-    else if (!(p.activeGlyphs ?? []).some(g => g.type !== "companion")) {
-      const power = (p.inventoryGlyphs ?? []).find(g => g.type === "power");
-      if (power) schritte.push(aktion("realityGlyphSetBauen", "ersterGlyph", "Rüste deinen Power-Glyph aus.",
-        [`Reality → Glyphs: ${glyphBestandText(power)} aus dem Inventar in einen freien aktiven Slot ziehen.`], "Der Power-Glyph ist aktiv.", "Ein Glyph im Inventar verstärkt deine Produktion noch nicht; sein Effekt wirkt erst ausgerüstet."));
-    }
     const kauf = ruKaufSchritt(p);
     if (kauf?.gruppe === "ruJetztKaufen" && !p.currentChallenge?.infinity && !p.currentChallenge?.normal) {
       schritte.push(kauf);
       // Prolong immediately grants Eternities. Replan after that purchase.
       if (kauf.kaufIds.includes(10)) return { phase: "reality", schritte, hinweise: [], meilenstein: MEILENSTEINE[5] };
+      p = { ...p, realityUpgrades: [...(p.realityUpgrades ?? []), ...kauf.kaufIds] };
     }
+    const set = !einzelGlyph && glyphAuffuellenSchritt(p);
+    if (set) schritte.push(set);
     const perk = perkSchritt(p);
     if (perk) schritte.push(perk);
     const ziele = istRealityDreiRoute(p)
@@ -383,6 +391,7 @@
       schritte.push(aktion("realityRequirementsSammeln", "realitySchutz",
         "Lege die Ziele und RM-Ausgaben für diese Reality fest.", handgriffe,
         "Die genannten Sperren sind gesetzt und die RM reserviert. Die späteren EP-Ziele müssen jetzt noch nicht erreicht sein."));
+      schritte.at(-1).inhalt.warumDetails = ids.map(ruGrund);
     }
     const kern = konkreteInfinity(p, ids.includes(10) ? 400 : 308, ids.includes(6));
     if (ids.includes(7)) {
@@ -929,6 +938,69 @@
     return `${GLYPH_TYP[glyph.type] ?? glyph.type} Level ${glyph.level}${effekte ? ` (${seltenheit}${effekte})` : ""}`;
   }
 
+  function glyphGrund(g) {
+    if (g.type === "companion") return "Der aktive Companion belegt einen Slot, bringt aber keinen Produktionsbonus. Er bleibt bei dieser Ergänzung aktiv; beim nächsten geplanten Glyph-Respec im Inventar lassen, damit ein Produktions-Glyph den Platz nutzen kann.";
+    const e = glyphEffekte(g);
+    const gruende = [];
+    if (e.includes("powermult")) gruende.push("der direkte AD-Multiplikator wirkt schon ab AD1 und beschleunigt den Wiederaufbau nach jedem Reset");
+    if (e.includes("powerpow")) gruende.push("AD-Potenz verstärkt die Multiplikatoren aller acht Antimatter Dimensions; mehrere Power-Glyphs addieren ihre Potenzboni und helfen so beim AM-/IP- und späteren EP-Push");
+    if (e.includes("powerdimboost")) gruende.push("der Dimboost-Multiplikator verstärkt zusätzlich die Dimension Boosts und bleibt auch in EC11 nützlich");
+    if (e.includes("powerbuy10")) gruende.push("der Kauf-10-Bonus verstärkt jedes weitere Zehnerpaket von Antimatter Dimensions");
+    if (e.includes("timeEP")) gruende.push("der EP-Multiplikator erhöht den Gewinn jeder Eternity, sodass du früher Time Dimensions, ×5 EP und Time Theorems bezahlen kannst");
+    if (e.includes("timepow")) gruende.push("TD-Potenz verstärkt Time Dimensions und damit den Aufbau von Time Shards für zusätzliche Tickspeed-Upgrades");
+    if (e.includes("timeetermult")) gruende.push("der Eternity-Multiplikator erhöht die Zahl gezählter Eternities für Milestones und anzahlabhängige Boni; er multipliziert nicht die EP");
+    if (e.includes("timespeed")) gruende.push("Spielgeschwindigkeit beschleunigt die Produktion und die meisten Timer");
+    if (e.includes("infinitypow")) gruende.push("ID-Potenz erhöht die Infinity-Power-Produktion und dadurch die Stärke der Antimatter Dimensions");
+    if (e.includes("infinityrate")) gruende.push("die Infinity-Power-Umwandlung macht den AD-Bonus aus deiner Infinity Power stärker");
+    if (e.includes("infinityIP")) gruende.push("der IP-Multiplikator finanziert Infinity Dimensions und Replicanti-Upgrades früher");
+    if (e.includes("infinityinfmult")) gruende.push("mehr gezählte Infinities helfen bei Infinity-Anforderungen und anzahlabhängigen Boni");
+    if (e.includes("replicationspeed")) gruende.push("schnellere Replicanti verkürzen den Aufbau von Replicanti-Galaxien und erhöhen später den Replicanti-Rekord für Glyph-Level");
+    if (e.includes("replicationpow")) gruende.push("der stärkere Replicanti-Multiplikator verbessert die Infinity Dimensions");
+    if (e.includes("replicationdtgain") || e.includes("dilationDT")) gruende.push("mehr Dilated Time finanziert Dilation-Upgrades und Tachyon-Galaxien früher");
+    if (e.includes("replicationglyphlevel")) gruende.push("der Replicanti-Faktor liefert aus demselben Rekord mehr Glyph-Level für die nächste Auswahl");
+    if (e.includes("dilationTTgen")) gruende.push("passive TT-Erzeugung spart wiederholte Theorem-Käufe und verkürzt den Weg zu Dilation-Studies");
+    if (e.includes("dilationgalaxyThreshold")) gruende.push("die niedrigere TG-Schwelle liefert bei derselben Dilated Time mehr Tachyon-Galaxien");
+    if (e.includes("dilationpow")) gruende.push("die AD-Potenz hilft beim Antimatter-Push innerhalb von Dilation");
+    return `${glyphBestandText(g)}: ${gruende.join("; ") || "die ausgelesenen Effekte reichen für einen belastbaren Vergleich nicht aus"}.`;
+  }
+
+  function glyphSetGruende(p, auswahl) {
+    const weggelassen = [...(p.inventoryGlyphs ?? []), ...(p.activeGlyphs ?? [])]
+      .filter(g => g.type !== "companion" && !auswahl.some(a => a === g || (a.id != null && a.id === g.id)));
+    return [
+      ...auswahl.map(glyphGrund),
+      ...weggelassen.map(g => `${glyphBestandText(g)} bleibt für dieses Set im Inventar: `
+        + (g.type === "time" && !glyphEffekte(g).includes("timeEP") && auswahl.some(a => glyphEffekte(a).includes("timeEP"))
+          ? "Dein gewählter Time-Glyph erhöht auch EP. Für den übrigen Platz priorisiert diese frühe Push-Route AD-Potenz vor zusätzlicher Eternity-Anzahl; die höhere Seltenheit allein entscheidet nicht."
+          : "Die Auswahl priorisiert passende Effekte für den EP-/RM-Aufbau, danach Level und Stärke. Das ist eine Empfehlung aus dem Bestand, kein gemessener Vergleich der Laufzeiten.")),
+    ];
+  }
+
+  function glyphAuffuellenSchritt(p) {
+    // Das noch offene Ein-Glyph-Ziel hat Vorrang, auch bei bereits aktivem Glyph.
+    if (!hat(p.realityUpgrades, 9) && !hat(p.realityUpgradeUnlocks, 9) && ru9NochMoeglich(p)) return null;
+    if (hat(p.realityRequirementLocks, 24) && !hat(p.realityUpgrades, 24) && !hat(p.realityUpgradeUnlocks, 24)) return null;
+    const aktiv = p.activeGlyphs ?? [];
+    const slots = glyphSlots(p);
+    if (aktiv.length >= slots) return null;
+    const kandidaten = glyphAuswahl({ ...p, activeGlyphs: [] }).filter(g => !aktiv.some(a => a.id != null && a.id === g.id));
+    const dazu = kandidaten.slice(0, slots - aktiv.length);
+    if (!dazu.length) return null;
+    const auswahl = [...aktiv, ...dazu];
+    const schritt = aktion("realityGlyphSetBauen", "glyphAuffuellen",
+      `Belege ${auswahl.length} deiner ${slots} Glyph-Slots für diesen Lauf.`,
+      [...(aktiv.length ? [`Aktiv lassen: ${glyphListe(aktiv)}. Für diese Ergänzung ist kein Reality-Neustart nötig.`] : []),
+        ...dazu.map(g => `Reality → Glyphs: ${glyphBestandText(g)} aus dem Inventar in einen freien aktiven Slot ziehen.`),
+        ...(aktiv.some(g => g.type === "companion") ? [] : ["Den Companion im Inventar lassen."]),
+        ...(auswahl.length < slots ? [`Dein Bestand belegt erst ${auswahl.length} Slots; die übrigen ${slots - auswahl.length} Slots bleiben vorerst frei.`] : [])],
+      `${auswahl.length} Glyph-Slots sind belegt.`,
+      `Du hast ${slots} aktive Slots${hat(p.realityUpgrades, 9) ? ` durch das gekaufte ${ruName(9, true)}` : ""}${hat(p.realityUpgrades, 24) ? ` und ${ruName(24, true)}` : ""}. `
+        + "Die Auswahl nutzt deine vorhandenen Effekte für den frühen EP-/RM-Aufbau. Freie Slots können sofort ergänzt werden; bereits aktive Glyphs bleiben erhalten.");
+    schritt.glyphAuswahl = auswahl;
+    schritt.inhalt.warumDetails = glyphSetGruende(p, auswahl);
+    return schritt;
+  }
+
   function ru9GlyphSchritt(p) {
     if (hat(p.realityUpgradeUnlocks, 9) || hat(p.realityUpgrades, 9) || !ru9NochMoeglich(p)
       || (p.activeGlyphs ?? []).some(g => g.type !== "companion")) return null;
@@ -940,20 +1012,26 @@
     });
     const glyph = sortiert[0];
     if (!glyph) return null;
-    return aktion("realityGlyphSetBauen", "ru9Glyph", `Rüste genau diesen Glyph aus: ${glyphBestandText(glyph)}.`,
+    const schritt = aktion("realityGlyphSetBauen", "ru9Glyph", `Rüste genau diesen Glyph aus: ${glyphBestandText(glyph)}.`,
       [`Reality → Glyphs: ${glyphBestandText(glyph)} im Inventar doppelt anklicken oder in einen aktiven Slot ziehen. Die Effekte stehen im Tooltip.`,
         "Lass die übrigen Slots bis zur Eternity bei e4000 EP leer. Die anderen Glyphs bleiben im Inventar.",
         hat(p.realityRequirementLocks, 9) ? "Das Requirement Lock ist bereits aktiv; nicht noch einmal anklicken."
           : `Danach bei ${ruName(9, true)} mit Shift-Klick das offene Schloss schließen.`],
       "Genau der genannte Glyph ist aktiv; Linguistically Expand ist geschützt.",
-      glyphEffekte(glyph).includes("timeEP")
-        ? "Die Reality-Pins empfehlen für diese Bedingung einen Time-Glyph mit EP-Multiplikator oder einen Power-Glyph ab Level 3. Dein Time-Glyph verstärkt den EP-Gewinn und die Time Dimensions; seine Seltenheit allein ist kein Grund, den anderen Typ zu nehmen."
-        : "Dieser Glyph erfüllt die Level-Bedingung für den zusätzlichen Slot. Ein Glyph im Inventar gibt noch keinen Produktionsbonus.");
+      "Linguistically Expand verlangt bei der Eternity mit e4000 EP genau einen aktiven Glyph ab Level 3. Deshalb bleiben die anderen Slots leer. "
+        + (glyphEffekte(glyph).includes("timeEP") ? "Unter deinen passenden Glyphs bekommt der Time-Glyph mit EP-Multiplikator Vorrang: Du musst unter dieser Einschränkung den gesamten EP-Aufbau schaffen. "
+          : "Aus den passenden Glyphs bekommt ein Power-Glyph Vorrang, danach entscheiden Level und Stärke. ")
+        + "Das Upgrade gibt dir anschließend den vierten Slot; eine höhere Seltenheit allein ersetzt weder den nötigen Effekt noch Level 3.");
+    schritt.inhalt.warumDetails = [glyphGrund(glyph)];
+    return schritt;
   }
 
-  function glyphSetAusBestand(p, festesGlyph = null) {
-    const bestand = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])]
-      .filter(glyph => glyph?.type !== "companion");
+  const glyphSlots = p => 3 + Number(hat(p.realityUpgrades, 9)) + Number(hat(p.realityUpgrades, 24));
+  const glyphListe = glyphs => new Intl.ListFormat("de").format(glyphs.map(glyphBestandText));
+
+  function glyphAuswahl(p, festesGlyph = null) {
+    const bestand = [...new Map([...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? []), ...(festesGlyph ? [festesGlyph] : [])]
+      .filter(glyph => glyph?.type !== "companion").map(g => [g.id ?? g, g])).values()];
     const score = glyph => {
       const effekte = Array.isArray(glyph.effectIds)
         ? glyph.effectIds
@@ -962,12 +1040,11 @@
         + (effekte.includes("powerpow") ? 8000 : 0)
         + (effekte.includes("timepow") ? 6000 : 0)
         + (effekte.includes("powermult") ? 3000 : 0)
-        + (Number(glyph.level) || 0);
+        + Math.sqrt(Math.max(1, Number(glyph.level) || 1) * Math.max(1, glyph.strength ?? 1 + (glyph.rarity ?? 0) / 40));
     };
     const sortiert = bestand.slice().sort((a, b) => score(b) - score(a));
-    const auswahl = festesGlyph ? [festesGlyph, ...sortiert] : sortiert;
-    if (auswahl.length < 3) return null;
-    const slots = 3 + (hat(p.realityUpgrades, 9) ? 1 : 0) + (hat(p.realityUpgrades, 24) ? 1 : 0);
+    const auswahl = sortiert;
+    const slots = glyphSlots(p);
     if (slots > 3) {
       // Pick an available build from the supplied early-Reality guide. This is
       // an effects/level heuristic, not a promise of optimal simulated RM/min.
@@ -987,23 +1064,27 @@
         if (slots === 5 && pool.length) set.push(pool[0]);
         return set;
       }).filter(Boolean).sort((a, b) => b.reduce((sum, g) => sum + qualitaet(g), 0) - a.reduce((sum, g) => sum + qualitaet(g), 0));
-      if (kandidaten.length) return kandidaten[0].map(glyphBestandText).join(", ").replace(/, ([^,]+)$/, " und $1");
+      if (kandidaten.length) return kandidaten[0];
     }
-    return auswahl.slice(0, slots).map(glyphBestandText).join(", ").replace(/, ([^,]+)$/, " und $1");
+    return auswahl.slice(0, slots);
+  }
+
+  function glyphSetAusBestand(p, festesGlyph = null) {
+    const auswahl = glyphAuswahl(p, festesGlyph);
+    return auswahl.length >= 3 ? glyphListe(auswahl) : null;
   }
 
   /* Wie glyphSetAusBestand, aber ohne die Drei-Slot-Mindestmenge: fruehe
      Realitys haben oft nur einen oder zwei Glyphs, und dann ist "die drei
      staerksten aus deinem Inventar" keine Anweisung, sondern eine Ausrede. */
   function glyphSetVorhanden(p) {
-    const bestand = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])]
-      .filter(glyph => glyph?.type !== "companion");
+    const bestand = glyphAuswahl(p);
     if (!bestand.length) return null;
-    return bestand.slice(0, 5).map(glyphBestandText).join(", ").replace(/, ([^,]+)$/, " und $1");
+    return glyphListe(bestand);
   }
 
   function fruehesGlyphSetPasst(p) {
-    return p.activeGlyphs?.length === 3
+    return p.activeGlyphs?.length === Math.min(glyphSlots(p), glyphAuswahl(p).length)
       && !p.activeGlyphs.some(glyph => glyph.type === "companion")
       && glyphSetAusBestand(p) === glyphSetAusBestand({ ...p, inventoryGlyphs: [] });
   }
@@ -1083,7 +1164,8 @@
       : "Reality → Upgrades: Gib die " + rm + " RM noch nicht aus. Kauf erst nach der ersten manuellen Eternity.";
     const set = frischerLauf
       ? leererSchritt(KONKRETE_SCHRITTE.realitySet.schrittId, "realitySet", {
-        werte: { glyphSet: glyphSetAusBestand(p), rmHinweis } })
+        werte: { glyphSet: glyphSetAusBestand(p), rmHinweis },
+        inhalt: { warumDetails: glyphSetGruende(p, glyphAuswahl(p)) } })
       : { ...reset[1], werte: { ...reset[1].werte, rmHinweis } };
     if (!frischerLauf || !fruehesGlyphSetPasst(p)) schritte.push(set);
 
@@ -1213,6 +1295,7 @@
 
     return leererSchritt(KONKRETE_SCHRITTE.realityRuKaufen.schrittId, "ruJetztKaufen", {
       kaufIds: liste.map(eintrag => eintrag.id),
+      inhalt: { warumDetails: liste.map(eintrag => `${ruName(eintrag.id, true)} für ${eintrag.kosten} RM: ${eintrag.nutzen}.`) },
       werte: {
         ruListe: liste.map(eintrag => `${ruName(eintrag.id, true)}: ${eintrag.kosten} RM`).join("; "),
         ruTop: ruName(liste[0].id),
@@ -1229,12 +1312,33 @@
     if (!(p.perkPoints > 0)) return null;
     const vorschlag = perkVorschlag(p);
     if (!vorschlag) return null;
+    const gekauftJetzt = vorschlag.pfad.slice(0, vorschlag.punkte);
+    const nutzen = {
+      0: "START ist der Einstieg in den Perk-Baum. Vier Glyph-Angebote pro Reality erhöhen die Chance auf einen für dein Set passenden Effekt; außerdem entfällt die Achievement-Bedingung der Reality-Study.",
+      57: "EC5R entfernt die EC5-Sperre von TS62. Damit kannst du die dreifache Replicanti-Geschwindigkeit schon vor EC5 nutzen; die 3 TT und die übrigen Study-Verbindungen musst du weiterhin bezahlen.",
+      31: "PASS macht TS122 zu ×50 EP, TS142 zu ×e50 IP und TS132 zu dreifacher Replicanti-Geschwindigkeit. Damit ist der frühe Passive-Pfad sofort stark, ohne TS121 erst mit kurzen Eternities vorzubereiten.",
+      54: "EC1R entfernt nur die EC1-Bedingung von TS181. Der entscheidende Grund für diesen Kauf ist die Verbindung zu ECR → ECB: Danach entfallen Ressourcen-Farmen zum EC-Eintritt und später wiederholte Einzelstarts derselben Challenge. "
+        + (hat(p.realityUpgrades, 12) || hat(p.realityUpgradeUnlocks, 12)
+          ? "The Knowing Existence ist bei dir bereits erledigt und daher kein Grund für diesen Kauf. " : "Solange The Knowing Existence offen ist, bleibt EC1 trotzdem tabu; EC1R schließt die Challenge nicht ab. ")
+        + "TS181 ist damit weder gratis noch sofort verfügbar: TT, Study-Verbindungen und die übrigen EC-Sperren gelten weiterhin.",
+      72: "ECR entfernt die zusätzlichen Ressourcen-Anforderungen von ECs, etwa Eternities für EC1 oder Infinities für EC4. Du brauchst weiterhin TT und einen passenden Study-Pfad, sparst aber die getrennten Freischalt-Farmen in jeder Reality. ECR öffnet außerdem den direkten Weg zu ECB.",
+      73: "ECB lässt einen Challenge-Lauf mehrere Stufen abschließen, wenn dein IP-Gewinn die jeweiligen höheren Ziele erreicht. Du sparst wiederholtes Verlassen, Freischalten und Starten; für unerreichte Ziele gibt es keine kostenlosen Abschlüsse.",
+      70: "ACT hält die Active-Studies auf ihrem maximalen Bonus. Das spart die zehn kurzen Eternities für TS121 und verhindert den Verfall des TS141-IP-Bonus. Automatische Replicanti-Galaxien auf Active brauchen weiterhin r138. Nach ECR/ECB reduziert das die Vorbereitung wiederholter EP-Pushes.",
+      201: "ACH1 verkürzt den automatischen Achievement-Timer auf 20 Minuten je Achievement und beginnt den Weg zu ACHNR. Dadurch kommen Belohnungen früher zurück; ACHNR soll später den Verlust der ersten 13 Reihen ganz entfernen.",
+      202: "ACH2 verkürzt den Timer von 20 auf 12 Minuten je Achievement und ist der nächste Verbindungsknoten zu ACHNR. Die früher zurückkehrenden Belohnungen helfen schon während der laufenden Reality.",
+      203: "ACH3 verkürzt den Timer von 12 auf 6 Minuten je Achievement. Der Kauf setzt den Weg zu ACHNR fort, damit die ersten 13 Achievement-Reihen später dauerhaft erhalten bleiben.",
+      204: "ACH4 verkürzt den Timer von 6 auf 2 Minuten je Achievement und öffnet ACHNR direkt. Sein unmittelbarer Nutzen ist kürzeres Warten; das nächste Ziel beseitigt den Wiederaufbau ganz.",
+      205: "ACHNR gibt dir die ersten 13 Achievement-Reihen sofort zurück und erhält sie bei Reality. So wirken etwa doppelte Eternities und die frühen Replicanti-/Reset-Boni künftig schon ab Laufbeginn.",
+    };
     return leererSchritt(KONKRETE_SCHRITTE.realityPerkPfad.schrittId, "perkPfad", {
-      kaufIds: vorschlag.pfad.slice(0, vorschlag.punkte),
+      kaufIds: gekauftJetzt,
+      inhalt: { warumDetails: gekauftJetzt.map(id => nutzen[id] ?? `${perkName(id)}: ${PERK_INFO.get(id)?.[1]}. Dieser Knoten verbindet deinen vorhandenen Baum mit ${vorschlag.zielName}.`) },
       werte: {
         perkJetzt: vorschlag.jetztText,
         perkPunkte: String(vorschlag.punkte),
-        perkWarum: vorschlag.warum,
+        perkWarum: gekauftJetzt.includes(vorschlag.zielId)
+          ? `Dein nächstes Ziel ${vorschlag.zielName} ist mit diesen Käufen erreicht`
+          : `Du kaufst zunächst die Verbindung zu ${vorschlag.zielName}; der Ziel-Perk selbst ist mit deinen ${vorschlag.punkte} Punkten noch nicht erreichbar`,
       },
     });
   }
@@ -1271,9 +1375,13 @@
         : "Reality → Upgrades: Nach dem Reset hast du " + (bank + gewinn) + " RM. Kauf damit noch nichts; die fehlenden Upgrades Cosmically Duplicate, Paradoxically Attain und Existentially Prolong werden erst nach deiner ersten manuellen Eternity kaufbar.",
     };
     return [
-      leererSchritt(KONKRETE_SCHRITTE.realityReset.schrittId, "realityReset", { werte }),
-      leererSchritt(KONKRETE_SCHRITTE.realitySet.schrittId, "realitySet", { werte }),
-      ...(kauf ? [blackHole ? { ...kauf, inhalt: { soGehts: [
+      leererSchritt(KONKRETE_SCHRITTE.realityReset.schrittId, "realityReset", { werte,
+        inhalt: { warum: "Glyph-Respec räumt beim Reality-Reset die aktiven Slots für das nächste Set frei. "
+          + (ru8Offen ? "Paradoxically Attain ist bereits gesichert; deshalb darf Auto Achievements an bleiben." : "Der ausgeschaltete Achievement-Timer bewahrt die Bedingung für Paradoxically Attain im nächsten Lauf."),
+        warumDetails: glyph ? [glyphGrund(glyph)] : ["Bei den angebotenen Glyphs hat Time mit EP-Multiplikator Vorrang für frühe EP-Käufe, danach Power mit AD-Potenz für den Produktions-Push. Ohne ausgelesenes passendes Angebot ist keine konkrete Angebotsnummer belegbar."] } }),
+      leererSchritt(KONKRETE_SCHRITTE.realitySet.schrittId, "realitySet", { werte,
+        inhalt: { warumDetails: glyphSetGruende(p, glyphAuswahl(p, glyph)) } }),
+      ...(kauf ? [blackHole ? { ...kauf, inhalt: { ...kauf.inhalt, soGehts: [
         "Reality → Upgrades: Kauf in dieser Reihenfolge {ruListe}.",
         "Die verbleibenden {restRM} RM sind für das Black Hole im nächsten Schritt reserviert.",
       ] } } : kauf] : []),
@@ -1506,14 +1614,11 @@
         resources: { ...p.resources, realityMachines: (p.resources?.realityMachines ?? 0)
           - kauf.kaufIds.reduce((sum, id) => sum + RU_KOSTEN.get(id), 0),
           eternities: kauf.kaufIds.includes(10) ? Math.max(100, p.resources?.eternities ?? 0) : p.resources?.eternities } };
-      if (kauf.kaufIds.includes(9)) {
-        const set = glyphSetAusBestand(p) ?? glyphSetVorhanden(p);
-        if (set) schritte.push(aktion("realityGlyphSetBauen", "glyphNachExpand",
-          "Fülle nach Linguistically Expand deine Glyph-Slots auf.",
-          [`Reality → Glyphs: Stelle aus deinem Bestand dieses Set zusammen: ${set}. Den bereits aktiven Glyph behalten und die übrigen aus dem Inventar in freie Slots ziehen.`,
-            "Die Ein-Glyph-Bedingung ist jetzt dauerhaft erledigt. Mit dem vollständigen Set den weiteren EP-/RM-Push spielen."],
-          "Die genannten Glyphs sind ausgerüstet."));
-      }
+    }
+    const glyphSet = glyphAuffuellenSchritt(p);
+    if (glyphSet) {
+      if (kauf?.kaufIds?.includes(9)) glyphSet.gruppe = "glyphNachExpand";
+      schritte.push(glyphSet);
     }
 
     const perk = perkSchritt(p);
@@ -1646,7 +1751,8 @@
           vorhanden < 4 ? "Farm zuerst die noch fehlenden Glyphs in kurzen Realities. Bewahre die passenden Exemplare auf."
             : aktiv.filter(passt).length < 4 ? "Beim nächsten Reality-Reset Glyph Respec aktivieren, anschließend vier passende Glyphs ausrüsten und mit diesem Set einen weiteren Lauf abschließen."
               : "Das aktive Set erfüllt die Glyph-Bedingung. Beim nächsten Reality-Abschluss wird sie gespeichert.",
-          `Spar 1.500 RM für ${ruName(id)}. Ein gespeichertes Requirement allein gibt den Bonus noch nicht.`], `${ruName(id)} zeigt Cost: 1.50e3 RM oder ist gekauft.`));
+          `Spar 1.500 RM für ${ruName(id)}. Ein gespeichertes Requirement allein gibt den Bonus noch nicht.`], `${ruName(id)} zeigt Cost: 1.50e3 RM oder ist gekauft.`,
+        ruGrund(id) + ` Die Bedingung prüft beim Reality-Abschluss vier aktive Glyphs mit jeweils ${kriterium}; bloßer Inventarbesitz zählt nicht. Deshalb wird vor dem Lauf genau dieses Merkmal geprüft.`));
     } else if (offen(19)) s.push(aktion("spaeteRealityUpgrades", "realitySacrifice", `Sammle 30 Glyphs für ${ruName(19, true)}.`,
       [`Du besitzt ${alle.length} Glyphs ohne Companion. Bis 30 keine davon entfernen; mit mindestens 30 eine Reality abschließen.`,
         "Kauf Scour to Empower für 1.500 RM. Danach schwache Ersatzglyphs mit Shift-Klick opfern; aktive Builds und noch nötige Requirement-Glyphs behalten."], "Glyph Sacrifice ist verfügbar."));
@@ -1665,7 +1771,13 @@
           24: ["Glyph Respec vor dem nächsten Reset aktivieren. Im neuen Lauf alle normalen Glyph-Slots leer lassen und das Requirement Lock setzen.", "Bis mindestens 5000 RM im Reality-Knopf pushen und ohne normale Glyphs resetten. Synthetic Symbolism für 100.000 RM kaufen."],
         }[ziel];
         s.push(aktion("spaeteRealityUpgrades", "realityRow5", `Erfüll als Nächstes ${ruName(ziel, true)}.`, wie,
-          `${ruName(ziel)} ist gekauft.`, "Die fünfte Reihe hängt stark vom Glyph-Bestand ab. Die DT- und TD-Builds aus den Pins zielen jeweils auf den konkreten Engpass; erfüllte Bedingungen werden übersprungen."));
+          `${ruName(ziel)} ist gekauft.`, ruGrund(ziel) + " " + {
+            25: "Die Bedingung verlangt e11111 EP; deshalb wird hier der normale EP-Push bis zu genau diesem Rekord fortgesetzt.",
+            23: "Die Grenze zählt Spielzeit, deshalb würden Black Holes und Game-Speed-Glyphs den Timer schneller verbrauchen. Perks und Automation sparen dagegen echte Bedien- und Aufbauzeit.",
+            21: "Alle Galaxientypen zählen. DT-Effekte und Replicanti-Geschwindigkeit liefern zusätzliche TGs und RGs für die Gesamtsumme von 2800.",
+            22: "Gefordert sind Time Shards. TD-Potenz erhöht deren Produktion direkt; der Replicanti-Multiplikator kann über TS103 auch Time Dimensions verstärken.",
+            24: "Der fünfte Slot wird durch einen Lauf ganz ohne normale Glyphs verdient. Deshalb vorher respecen und das Lock setzen; ein versehentlich ausgerüsteter Glyph würde die Bedingung verlieren.",
+          }[ziel]));
       }
     }
     return s;
@@ -1720,8 +1832,8 @@
   function vSchritte(p) {
     const v = p.celestials?.v ?? {};
     const s = [];
-    const add = (gruppe, titel, wie, fertig) => s.push(aktion("vAnforderungenSteigern", gruppe, titel, wie, fertig,
-      "Reihenfolge und Glyph-Sets folgen den aktuellen Discord-Pins. Zahlen sind die Grundziele vor einer möglichen Senkung mit Perk Points; der V-Tab zeigt das für deinen Lauf gültige Ziel."));
+    const add = (gruppe, titel, wie, fertig, warum) => s.push(aktion("vAnforderungenSteigern", gruppe, titel, wie, fertig,
+      warum ?? "Die nächste V-Etappe braucht mehr Produktionsstärke. Höhere RM verbessern die wiederkaufbaren Boni; bessere Glyphs und Sacrifice verstärken den anschließenden V-Lauf. Die Farmmarke ist ein Routenrichtwert, keine harte Eintrittsbedingung."));
     if (!hat(v.unlocks, 0)) {
       const r = p.resources ?? {};
       const fehlt = [[p.realities >= 10000, "10.000 Realities"], [r.eternities >= 1e70, "e70 Eternities"],
@@ -1752,7 +1864,15 @@
         [`Vor einem neuen V-Lauf ${code ? glyphBuild(code) + " ausrüsten" : "alle normalen Glyphs ablegen"}.`,
           ...(code.includes("e") ? [`Effarig-Effekte: ${st < 30 || id === 5 ? "3567" : id === 2 ? "3457" : "3467"} in der Reihenfolge der Effektliste.`] : []),
           `${id === 1 ? "Active" : "Idle"} benutzen${st >= 20 && id !== 1 ? " und TS131+132 dazukaufen" : st >= 10 && id !== 1 ? " und TS131 dazukaufen" : ""}. ${id === 5 ? "TS221, 224 und 231 wirken für Matterception nicht." : id === 2 ? "TS221 und 227 helfen in EC7 nicht." : "Übrige ST zuerst in TS221 und 226 investieren."}`,
-          `In V ${bedingung}. Ab 24 Abschlüssen hilft gespeicherte Black-Hole-Zeit zunehmend. Wenn die Stufe stockt, zuerst die benachbarte Etappe oder bessere Glyphs versuchen.`], `${name} steht mindestens auf Stufe ${tier}.`);
+          `In V ${bedingung}. Ab 24 Abschlüssen hilft gespeicherte Black-Hole-Zeit zunehmend. Wenn die Stufe stockt, zuerst die benachbarte Etappe oder bessere Glyphs versuchen.`], `${name} steht mindestens auf Stufe ${tier}.`,
+        `${name} ${tier} bringt einen weiteren Space Theorem. ` + [
+          "Die Glyph-Grenze lässt nur wenige Effekte zu. Replication vereint Geschwindigkeit, Multiplikator und DT; Dilation ergänzt bei zwei Plätzen den DT-Aufbau. Bei der letzten Stufe müssen alle normalen Glyphs weg.",
+          "Das Ziel zählt Galaxien. Dilation- und Replication-Effekte erhöhen TGs und RGs, Active ergänzt die RG-Anzahl über TS131.",
+          "EC7 verändert die Dimensionskette bis hin zu AD7. Power verstärkt deren Antimatter-Ende, Effarig ergänzt die übergreifenden Produktionspotenzen; normale TD-Multiplikator-Studies helfen hier nicht wie außerhalb der EC.",
+          "EC12 hat ein enges Zeitbudget, Dilation ist für diese Bedingung verboten. Time-Glyphs stärken die TD-/Time-Shard-Produktion im vorgeschriebenen TD-Pfad; Effarig liefert Produktionspotenzen.",
+          "Gefordert sind EP. Replication verstärkt die Produktionsbasis, Time die TDs und EP, Effarig die übergreifenden Potenzen. Idle baut den Bonus im längeren V-Lauf auf.",
+          "Dimboosts müssen gleichzeitig in EC5 und Dilation erreicht werden. Dilation-Glyphs verbessern den dortigen Aufbau, Power hilft trotz der EC5-Kostenskalierung. Die ausdrücklich ausgelassenen Studies umgehen diese besondere Beschränkung nicht.",
+        ][id]);
       if (s.length >= MAX_SICHTBAR) break;
     }
     return s;
@@ -1774,7 +1894,8 @@
         [`Rüste ${glyphBuild(code)} für Ra aus. ${name === "enslaved" ? "ECs mit abschließen: Die Time Shards erzeugen die Chunks." : `Push ${name === "teresa" ? "EP" : name === "effarig" ? "Relic Shards" : "Infinity Power"} für mehr Chunks.`}`,
           "Kauf auch Fragmentation (Würfel) und Recollection (Gehirn), nicht ausschließlich Pet-Level. Fragmentation zuerst; bei geraden Teresa-Leveln zunächst Recollection kaufen.",
           "Chunks entstehen in Ra, Memories laufen auch außerhalb weiter. Nutze die Wartezeit für Alchemy, RM und Glyphs."], `Das Pet erreicht Level ${ziel}.`,
-        "Die Pin-Route priorisiert Teresa 8 → Effarig 8 → Nameless 5 → Effarig 10. Danach Effarig vor Teresa/Nameless und V, mit Vorrang für unmittelbar erreichbare Freischaltungen."));
+        `${name === "teresa" ? "Teresa erzeugt Chunks anhand von EP; das gemischte Produktionsset pusht deshalb EP." : name === "effarig" ? "Effarigs Chunks wachsen mit Relic Shards; verschiedene Glyph-Typen liefern viele unterschiedliche Effekte für den Shard-Ertrag." : name === "enslaved" ? "Nameless erzeugt Chunks anhand von Time Shards. Replication und Time verstärken über den TD-Pfad genau diese Produktion." : "V erzeugt Chunks anhand von Infinity Power. Infinity- und Replication-Effekte stärken diese Ressource."} `
+          + (name === "teresa" && ziel === 8 ? "Level 8 öffnet Effarigs Memories." : name === "effarig" && ziel === 8 ? "Level 8 öffnet die Nameless-Memories." : name === "enslaved" && ziel === 5 ? "Level 5 erhöht die Memory-Produktion aller Chunks anhand der gesamten Spielzeit." : name === "effarig" && ziel === 10 ? "Level 10 garantiert vier Effekte auf normalen Glyphs und erlaubt bis zu sieben auf Effarig-Glyphs." : "Das nächste Level verstärkt dieses Pet und bringt es näher an seine nächste angezeigte Freischaltung.")));
     }
     if ((pets.effarig ?? 0) >= 2 && (p.alchemyAtCapCount ?? 0) < 21) s.push(aktion("raSpaetarbeitMachen", "raAlchemy", "Fülle die aktuell freigeschalteten Alchemy-Ressourcen.",
       ["Verlasse Ra und push zuerst RM und Glyph-Level. Stelle Glyph-Verwertung auf Refinement.",
@@ -1794,7 +1915,11 @@
           id === 7 ? "TS302 kaufen. Den Inversionsregler passend zum nächsten Ziel auf 1/e100, 1/e150, 1/e200, 1/e250 oder 1/e300 stellen. Nicht entladen und EC12 nicht betreten; dann 400.000 freie TT erreichen."
             : id === 6 ? "TS301 kaufen. In einer EC respecen und den kürzesten Dilation-Weg für TT-Erzeugung kaufen. Bei Requiem 1 zunächst 1× Cursed + Effarig + Time, ab Stufe 2 das oben genannte Set verwenden."
               : `In V das nächste angezeigte Glyph-Level erreichen: ${[6500,7000,8000,9000,10000][runs[8] ?? 0]} vor eventueller Perk-Point-Senkung.`,
-          "Nach der Stufe zurück zur Pet-/Alchemy-Route; die Richtwerte in den Pins sind kein Grund, bereits machbare Stufen aufzuschieben."], "Die nächste Hard-V-Stufe ist gespeichert."));
+          "Nach der Stufe zurück zur Pet-/Alchemy-Route; die Richtwerte in den Pins sind kein Grund, bereits machbare Stufen aufzuschieben."], "Die nächste Hard-V-Stufe ist gespeichert.",
+        "Diese Hard-V-Stufe liefert zusätzliche Space Theorems. " + (id === 6
+          ? "Cursed zählt jeweils −3 und senkt die gewertete Glyph-Anzahl. Die wenigen übrigen Produktionsglyphs und passive TT-Erzeugung tragen den Lauf unter dieser Grenze."
+          : id === 7 ? "Die Bedingung verlangt extrem langsame Spielgeschwindigkeit. Der Inversionsregler erfüllt sie; Entladen oder EC12 würde diesen Versuch ungültig machen. TS302 und das Set helfen, die benötigten freien TT trotzdem aufzubauen."
+            : "Shutter Glyph verlangt ein Glyph-Level-Ziel. Vier Replication-Glyphs verstärken den Level-Faktor, Effarig verzögert Instability und unterstützt den Ressourcenaufbau.")));
     }
     if (!s.length) s.push(aktion("raSpaetarbeitMachen", "raImPush", "Push den RM-Ertrag bis zur Grenze von e1000 RM.",
       ["Nutze den vollständigen Study-Baum und wechsle RM-Pushes mit Glyph-Level- und Sacrifice-Läufen ab.", "Fülle den RM-Bestand bis zur Grenze. Dadurch werden Imaginary Machines verfügbar."], "Imaginary Machines sind geöffnet."));
@@ -1819,6 +1944,24 @@
     [25,"Omnipresent Obliteration",1.6e15,"d","die Reality-Study in Lai'tela mit allen Dimensionen deaktiviert und höchstens einem Glyph kaufen", "Alle acht Lai'tela-Stufen müssen deaktiviert sein. Requirement Lock aktivieren; nur einen Dilation-Glyph ausrüsten. Richtwerte: Level 39.000+, 2,5e45 Singularities, ungefähr zehn Minuten Laufzeit."],
   ];
 
+  const IM_GRUENDE = {
+    11: "Mehr TD-Potenz aus gesamtem Antimatter stärkt den weiteren Push. Das Shard-Set kombiniert verschiedene Glyph-Typen, weil unterschiedliche Effekte den Relic-Shard-Gewinn erhöhen.",
+    12: "Kostenlose Dimboosts aus den wiederkaufbaren Imaginary-Upgrades stärken die Produktion. Die Bedingung verlangt genau einen Level-Faktor: DT auf 100 nutzt den DT-Aufbau des Sets, ohne andere Faktoren mitzurechnen.",
+    13: "Der Kauf erhöht das IM-Limit anhand gekaufter Imaginary-Upgrades. In Nameless funktionieren wieder dieselben Puzzle-Ausnahmen: FEEL ETERNITY und EC6+C10 überwinden die dortigen Sperren, Time stärkt die verbleibende Produktionsroute.",
+    14: "Die Potenz 1,5 auf Dimensions-Kaufmultiplikatoren verstärkt alle späteren Pushes. Time-Glyphs bauen vor EC5 Time Shards und damit Tickspeed auf; der kurze Vorlauf sichert diese Produktion vor dem Challenge-Wechsel.",
+    15: "Dieser Kauf öffnet Lai'tela und Dark Matter. Das Lock schützt vor ID1 aus Käufen und auch aus der EC7-Produktionskette; Time-Glyphs tragen den alternativen Aufbau bis zum geforderten Antimatter-Ziel.",
+    16: "Die zweite Dark Matter Dimension produziert die erste und beschleunigt deren Ertrag. Zwei schnelle Lai'tela-Abschlüsse weisen die dafür nötige Destabilisation nach.",
+    17: "Die dritte Dark Matter Dimension erweitert die Produktionskette. Gefordert ist ein automatischer Mehrfach-Singularity-Ertrag; deshalb erst die Automation freischalten und die Kappe hoch genug setzen.",
+    18: "Die vierte Dark Matter Dimension vervollständigt die Kette. Für 80.000 Galaxien liefern vier Dilation-Glyphs vor allem DT und damit TGs; Reality verstärkt die Basisglyphs und Galaxien.",
+    19: "Annihilation tauscht einen DMD-Neustart gegen einen dauerhaften Produktionsmultiplikator. Die Acht-Study-Grenze schließt den normalen Tree aus; Infinity-Glyphs, Crunches und automatische EC-Belohnungen liefern die fehlende Produktionsstärke.",
+    20: "Der Kauf automatisiert wiederkaufbare Imaginary-Upgrades und beschleunigt die IM-Erzeugung. Mehr Dark Matter und der Annihilation-Multiplikator steigern den Continuum-Zuwachs bis zur geforderten 100-%-Marke.",
+    21: "Der Annihilation-Gewinn wird durch IM stärker. Weil Continuum für die gesamte Anforderung verboten ist, muss der gewöhnliche Kauf-/Produktionsaufbau mit Glyphs den AM-Push tragen.",
+    22: "Alle Glyph-Sacrifice-Werte steigen auf e100. Vier Cursed sind Teil der Bedingung und lassen nur einen freien Platz; der Dilation-Glyph hilft dem verbleibenden Aufbau in Effarigs Reality.",
+    23: "Tesseracts erhöhen nach dem Kauf die kostenlosen Dimboosts. Cursed zählt −3 und gleicht genau Reality, Effarig und Replication mit je +1 aus; deren Level-Effekte helfen, die geforderten 20.000 in Ra zu erreichen.",
+    24: "Singularities verstärken nach dem Kauf die kostenlosen Dimboosts. Vollständige Inversion ist Pflicht; Infinity-Glyphs stärken die Produktion für die 13.000 Antimatter-Galaxien, während das Lock ein versehentliches Umgehen der Inversion verhindert.",
+    25: "Der Kauf öffnet Pelle. In Lai'telas letzter Stufe sind alle Dimensionen deaktiviert und nur ein Glyph erlaubt. Dilation mit TT-Erzeugung kann den Weg zur Reality-Study weiter finanzieren; deshalb dieses einzelne Glyph statt eines normalen Produktionssets.",
+  };
+
   function imaginarySchritte(p, phase) {
     const s = [];
     let bank = p.resources?.imaginaryMachines ?? 0;
@@ -1831,7 +1974,8 @@
       bank -= kosten;
       gekauft.add(id);
       s.push(aktion("imaginaryUpgradesElfBisFuenfzehn", "imKauf", `Kauf ${name} für ${kosten.toExponential().replace("e+", "e")} IM.`,
-        [`Reality → Imaginary Upgrades, Reihe ${Math.ceil(id / 5)}, Spalte ${(id - 1) % 5 + 1}: Die Bedingung ist bereits gespeichert. Kauf das Upgrade.`], `${name} ist gekauft.`));
+        [`Reality → Imaginary Upgrades, Reihe ${Math.ceil(id / 5)}, Spalte ${(id - 1) % 5 + 1}: Die Bedingung ist bereits gespeichert. Kauf das Upgrade.`], `${name} ist gekauft.`,
+        `${name} ist bereits freigeschaltet und bezahlbar. ${IM_GRUENDE[id]}`));
       if (id === 15 || id === 25) return s;
     }
     for (const [id, name, kosten, code, ziel, tipp] of fehlt.filter(([id]) => !gekauft.has(id))) {
@@ -1852,7 +1996,7 @@
       wie.push(`Sobald die Bedingung als erfüllt angezeigt wird und ${kostenText} IM da sind, ${name} (${idText}) kaufen.`);
       const schritt = aktion("imaginaryUpgradesElfBisFuenfzehn", "imZiel",
         gespeichert ? `Spare ${kostenText} IM für ${name}; die Bedingung ist erledigt.` : `${name}: ${ziel}.`,
-        wie, `${name} ist gekauft.`, "Die konkreten Builds und Handgriffe stammen aus deinen Discord-Pins. Gespeicherte Anforderungen müssen nicht erneut erspielt werden.");
+        wie, `${name} ist gekauft.`, `${name}: ${IM_GRUENDE[id]}${gespeichert ? " Die Bedingung ist bei dir bereits gespeichert; jetzt fehlt nur noch die Finanzierung." : ""}`);
       if (id === 19 && !gespeichert) { schritt.baeume = [{ bezeichnung: "Genau acht Studies", importString: "11,21,31,41,51,61,72,82|0" }]; schritt.baeumeSichtbar = true; }
       s.push(schritt);
       if (bank < kosten) {
@@ -1896,7 +2040,11 @@
           "Bis zum Pelle-AD-Multiplikator für e47 RS sind EC11 mit TS231+233 gut für Remnants und Tachyon Particles. Danach den normalen Dilation-Lauf verwenden."], "Das Dilation-Set läuft und kauft die passenden Studies."));
       for (const ziel of [15, 25, 50].filter(ziel => prozent < ziel)) s.push(aktion("pelleBisGalaxyGenerator", "pelleRift", `Fülle Rift 5 von etwa ${Math.floor(prozent)} % bis ${ziel} %.`,
         [`Dieser Meilenstein kommt vor vergleichbar teuren Upgrades bei e${ziel} DT${ziel === 50 ? "; nur ×5 DT hat dort Vorrang" : ""}.`,
-          "Fülle portionsweise, wenn dein DT-Bestand mehr als 100-mal höher als der bisherige Rift-Füllwert ist. Anschließend DT wieder wachsen lassen."], `Rift 5 hat ${ziel} % erreicht.`));
+          "Fülle portionsweise, wenn dein DT-Bestand mehr als 100-mal höher als der bisherige Rift-Füllwert ist. Anschließend DT wieder wachsen lassen."], `Rift 5 hat ${ziel} % erreicht.`,
+        ({ 15: "Bei 15 % werden TD5–8 deutlich billiger und weitere Dilation-Upgrades verfügbar. Dieser Zugang hat hier Vorrang vor einem einzelnen ähnlich teuren DT-Kauf.",
+          25: "Bei 25 % geht die Tachyon-Partikel-Menge mit Potenz 1,4 in den DT-Gewinn ein. Das erhöht die weitere DT-Produktion und finanziert die folgenden Dilation-Upgrades schneller.",
+          50: "Bei 50 % verbessern die gekauften wiederholbaren Dilation-Upgrades die Umwandlung von Infinity Power in AD-Stärke. Dadurch wird der weitere AM-/EP-Push stärker; der günstige ×5-DT-Kauf darf vorher noch die Füllung beschleunigen." })[ziel]
+          + " Das Füllen verbraucht DT. Deshalb portionsweise füllen und den Vorrat zwischen den Portionen wieder aufbauen."));
       s.push(aktion("pelleBisGalaxyGenerator", "pelleUpgrades", "Kauf DT- und Tachyon-Galaxy-Upgrades in der Pin-Reihenfolge.",
         ["×5 DT → ×2,7 DT → TG-Multiplikator → TG-Schwelle → Tickspeed. Den ersten TG-Multiplikator vor ×2,7 DT kaufen; ×2 TG kaufen, sobald bezahlbar.",
           "Pelles TG-Schwelle hat Vorrang. Bei e55 DT Rift 4 wieder füllen, bis der Galaxy Generator aufgeht."], "Rift 4 ist voll und der Galaxy Generator ist verfügbar."));
@@ -1930,6 +2078,31 @@
             [text, "Für den jeweiligen Push wechseln: Power für AM/Remnants, Infinity für IP/Rift 1, Replication für Rift 3, Time für EP/Rift 4. TS21 behalten; Idle benutzen."],
             e.recommendedTT ? `${e.recommendedTT} TT sind erreicht.` : "Die genannten Werte oder Käufe sind erreicht.");
           schritt.eigeneRoute = true;
+          schritt.inhalt.warum = ["",
+            "TD1 erzeugt die ersten Time Shards und damit zusätzliche Tickspeed-Upgrades. Erst diese Produktion trägt den weiteren Eternity-Aufbau.",
+            "Chaos verstärkt Time Dimensions. Die Füllung verbraucht Decay statt EP; vor dem Reset aufgefüllt trägt dieser Bonus schon den nächsten Lauf.",
+            "Kurze Eternities finanzieren TDs und Studies. Der anschließende längere IP-Push liefert durch die EP-Formel mehr EP pro Reset als dieselben kleinen Wiederholungen.",
+            "Die EP werden hier für zusätzliche TT zurückgehalten. TS42 verbilligt die Galaxien-Skalierung und ermöglicht dadurch mehr Galaxien im folgenden Push.",
+            "TD3 erweitert die Time-Dimension-Kette. Mehr Time Shards liefern zusätzliche Tickspeed-Upgrades für den längeren IP-Push und den nächsten EP-Sprung.",
+            "15 % Chaos schalten die besonderen Pelle-Effekte der Glyphs frei. Erst dadurch bekommt der Wechsel des einzelnen Glyphs für IP, EP oder Rifts seinen großen Zusatznutzen.",
+            "28 TT finanzieren den nächsten Study-Ausbau. Kurze Resets sammeln dafür EP; vorhandene TDs und Chaos tragen den wiederholten Aufbau.",
+            "Der Pelle-AD-Multiplikator verstärkt die gesamte Antimatter-Kette. Mit dem Decay-Meilenstein verstärkt er zusätzlich ID1 und damit die Infinity-Power-Produktion.",
+            "TD4 speist die gesamte darunterliegende Time-Dimension-Kette. Ihr Ausbau und die zusätzlichen Studies liefern die Tickspeed-Stärke für den nächsten EP-Push.",
+            "Erhaltene Replicanti sparen ihren wiederholten Aufbau nach Resets. Die zusätzlichen TT öffnen den nächsten Teil des Trees und machen diesen dauerhaften Bonus besser nutzbar.",
+            "Der nächste Pelle-AD-Multiplikator erhöht die Produktion dauerhaft. Das Sparziel ist deshalb ein konkreter Produktionssprung für die folgenden IP- und EP-Läufe.",
+            "TS111 verbessert die Umrechnung von IP in EP. Die 48-TT-Marke finanziert den Zugang und erhöht so den Ertrag der folgenden Eternities.",
+            "Der EP-Push finanziert weitere TDs und TT; der nächste Pelle-AD-Multiplikator stärkt parallel die AD- und mit dem Decay-Meilenstein die ID1-Produktion.",
+            "EU3 verstärkt Infinity Dimensions anhand der Summe der Infinity-Challenge-Zeiten. Zusammen mit dem weiteren EP-Ausbau wächst die Infinity Power für den nächsten längeren Push.",
+            "Bei 40 % verstärkt Vacuum zusätzlich den EP-Gewinn. Idle passt zum längeren Aufbau: Sein IP-Bonus wächst mit der Laufzeit, sodass Füllung und EP-Push zusammenarbeiten.",
+            "TS151 verstärkt Time Dimensions, TS161 Antimatter Dimensions und TS162 Infinity Dimensions. Damit wachsen alle drei Produktionsketten für den Sprung zu höheren EP.",
+            "TS171 senkt die Time-Shard-Schwelle für zusätzliche Tickspeed-Upgrades. Ab 103 TT ist der passende TD-Aufbau finanzierbar und wertvoller als der bisherige frühe Pfad.",
+            "Mit TS171 profitiert der TD-Pfad besonders von der stärkeren Time-Shard-Produktion. Die zusätzlichen Tickspeed-Upgrades tragen den langen IP-Push für mehr EP.",
+            hat(pelle.progress, 4) ? "Der vierte Strike ist schon aktiv. Weitere EP können Recursion füllen und dessen Verbesserung der EP-Formel ausbauen."
+              : "Der vierte Strike öffnet Recursion. Dieses Rift verbessert die Umrechnung von IP in EP; der folgende EP-Push kann den neuen Bonus direkt füllen.",
+            "Der Infinity-Power-Verstärker macht aus derselben Infinity Power einen stärkeren AD-Bonus. Die dafür gesparten EP eröffnen einen neuen Produktionssprung.",
+            "Das nächste Pelle-AD-Upgrade verstärkt die AD-Kette und über den Decay-Meilenstein ID1. Der permanente Bonus bereitet die stärkere Produktion für die erste EC vor.",
+            "Die 143 TT finanzieren den vorgesehenen Einstieg in die Eternity Challenges. Deren wiederholbare Belohnungen und Recursion-Boni liefern den nächsten Ausbau, den bloßes EP-Farmen nicht ersetzt.",
+          ][e.order];
           if (e.tree) schritt.baeume = [{ bezeichnung: "Cel-7-Tree", importString: e.tree }];
           s.push(schritt);
         }
@@ -1951,8 +2124,10 @@
             ...(guide.runNotesDe[String(e.order)] ? [guide.runNotesDe[String(e.order)]] : []),
             "Innerhalb einer EC alle Rifts außer Rift 3 pausieren. Zwischen den Läufen Time Dimensions und die nächste TT-Marke pushen."],
           e.kind === "ec" ? `${e.run} ist abgeschlossen.` : `${zielTT} TT sind erreicht.`,
-          "Pelle verwendet die eigene Cel-7-Reihenfolge aus deiner Arbeitsmappe. Die TT-Marken sind Richtwerte; bei einem Kostendefekt gilt der Preis des vollständigen Trees.");
+          "Pelles Rifts und deaktivierte Studies verändern die sinnvolle Reihenfolge. Dieser nächste offene Schritt nutzt die bereits erreichten Abschlüsse und das angegebene TT-Budget. "
+            + ({ Time: "Der Time-Glyph verbessert EP für TD-/TT-Käufe und Rift 4.", Power: "Der Power-Glyph verbessert den Antimatter-Push und damit AM-Theorems und Remnants.", Infin: "Der Infinity-Glyph verstärkt IP für Infinity Dimensions, TT und Rift 1.", Rep: "Der Replication-Glyph beschleunigt Replicanti für den Aufbau von Rift 3 und RGs." }[e.glyph] ?? ""));
         schritt.eigeneRoute = true;
+        schritt.pelleEc = e.ec;
         if (!laeuft) schritt.baeume = [{ bezeichnung: `Cel-7 · ${e.run ?? zielTT + " TT"}`, importString: e.tree }];
         if (e.order === guide.treeCostConflict?.order) schritt.hinweis = `Die Mappe nennt ${e.recommendedTT} TT, der importierbare Tree kostet aber ${zielTT} TT.`;
         if (guide.routeOrderConflict.importableRoute.includes(e.run)) schritt.hinweis = "Die Mappe enthält zwei Reihenfolgen. Diese Route folgt dem Importable-Blatt: " + guide.routeOrderConflict.importableRoute.join(" → ") + ".";
@@ -2006,7 +2181,12 @@
       const kauf = [[0,"Glyph-Level-Faktoren",1e7],[1,"Glyph-Filter",2e8],[2,"Glyph-Presets",3e9],[3,"Effarigs Reality",5e11]]
         .find(([id]) => !hat(c.effarig?.unlocks, id));
       if (kauf) add("effarigWerkzeugeKaufen", "effarigWerkzeuge", `Kauf als Nächstes ${kauf[1]} für ${kauf[2].toExponential().replace("e+", "e")} Relic Shards.`,
-        [`Shard-Set: ${glyphBuild("pirtd")} mit möglichst vielen verschiedenen Effekten.`, "Push EP und schließe Realities für Shards ab. Kauf anschließend den genannten nächsten Shop-Eintrag."], `${kauf[1]} ist gekauft.`);
+        [`Shard-Set: ${glyphBuild("pirtd")} mit möglichst vielen verschiedenen Effekten.`, "Push EP und schließe Realities für Shards ab. Kauf anschließend den genannten nächsten Shop-Eintrag."], `${kauf[1]} ist gekauft.`,
+        ["Die Glyph-Level-Faktoren lassen dich das Gewicht auf die gerade stärkste Ressourcenquelle verschieben und so aus demselben Lauf mehr Level gewinnen.",
+          "Der Glyph-Filter wählt bei automatischen Realities nach deinen Effekten und Qualitätsgrenzen; dadurch sammeln schnelle Runs brauchbare Ersatzglyphs.",
+          "Glyph-Presets speichern getrennte RM-, Level- und Shard-Sets. Das spart beim Wechsel die manuelle Auswahl und verhindert, mit dem falschen Set weiterzufarmen.",
+          "Dieser Kauf öffnet Effarigs dreiteiligen Reality-Lauf und dessen dauerhafte Belohnungen. Die vorherigen Werkzeuge helfen, die dafür nötigen Glyph-Effekte zu sammeln."][kauf[0]]
+        + " Für den Kauf liefert das gemischte Shard-Set viele verschiedene Effekte; diese und der EP-Rekord bestimmen den Shard-Gewinn.");
       else if (!hat(c.effarig?.unlocks, 4)) add("effarigInfinityBrechen", "effarigInfinity", "Schließe Effarigs Infinity mit fünf Power-Glyphs ab.",
         ["Alle fünf brauchen den direkten AD-Multiplikator, möglichst mindestens 70 % Seltenheit. Mehr Glyph-Level löst die frühe Level-Kappe nicht.", "Starte Effarigs Reality und spiel bis Big Crunch. Bei einem Stall zuerst Effekte/Seltenheit verbessern."], "Effarigs Infinity-Abschnitt ist gespeichert.");
       else add("effarigEternityBrechen", "effarigEternity", "Schließe Effarigs Eternity mit Power, Infinity, zwei Replication und Dilation ab.",
@@ -2507,6 +2687,8 @@
     ];
   }
 
+  const ruGrund = id => `${ruName(id, true)} bringt nach dem Kauf ${RU_KAUFREIHE.find(e => e[0] === id)[2]}.`;
+
   // Official normal-achievements.js supplies conditions; the supplied Discord
   // pins supply deliberate detours. Current-run evidence never comes from a
   // lifetime record. These are opportunities, not extra progression blockers.
@@ -2522,7 +2704,13 @@
     const ip = r.infinityPointsLog10 ?? r.infinityPointsExponent ?? 0;
     const eternityBereit = ip >= Math.log10(Number.MAX_VALUE) && p.infinityDimensionsUnlocked === 8;
     const add = (id, name, wenn, zeitpunkt, text, anleitung = []) => {
-      if (wenn && !hat(p.achievementIds, id)) result.push({ id, name, zeitpunkt, text, anleitung });
+      const nutzen = {
+        43: "Belohnung: AD1 bis AD8 werden entsprechend ihrer Stufe um 1 % bis 8 % stärker.",
+        125: "Belohnung: ein IP-Multiplikator aus der Laufzeit dieser Infinity, nützlich für längere Pushes.",
+        154: "Belohnung: Jede Reality hat 10 % Chance auf doppelte Realities und Perk-Punkte.",
+      }[id] ?? ([101,107,108,115,122,153].includes(id)
+        ? "Dieses Achievement hat keinen eigenen Spezialbonus. Der Hinweis nutzt die gerade passende Bedingung für die Vervollständigung der Achievement-Reihe; ein längerer Umweg ist dafür nicht nötig." : "");
+      if (wenn && !hat(p.achievementIds, id)) result.push({ id, name, zeitpunkt, text: text + (nutzen ? " " + nutzen : ""), anleitung });
     };
     const serie = logs => {
       if (!Number.isFinite(logs?.[0])) return 0;
@@ -2693,6 +2881,14 @@
       schritte[schritte.length - 1] = { ...schritte.at(-1), saveNeuEinlesen: true };
     }
     const sichtbar = schritte.slice(0, MAX_SICHTBAR);
+    const erklaerPerks = [...(profil.perks ?? [])];
+    for (const schritt of sichtbar) {
+      if (schritt.gruppe === "perkPfad") erklaerPerks.push(...schritt.kaufIds);
+      for (const etappe of schritt.etappen ?? [schritt]) etappe.erklaerPerks = [...erklaerPerks];
+      const ruIds = (schritt.zielIds ?? []).filter(id => /^ru\d+$/.test(id)).map(id => Number(id.slice(2)));
+      if (ruIds.length) schritt.inhalt = { ...schritt.inhalt,
+        warumDetails: [...(schritt.inhalt?.warumDetails ?? []), ...ruIds.map(ruGrund)] };
+    }
     const schonErklaert = new Set(sichtbar.flatMap(s => s.fehlendeAchievements ?? []));
     const achievements = achievementHinweise(profil ?? {}, plan.phase).filter(a => !schonErklaert.has(a.id));
     if (achievements.some(a => a.id === 143 && a.anleitung.length)) {

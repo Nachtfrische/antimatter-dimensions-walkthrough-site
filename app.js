@@ -197,6 +197,7 @@
         ${etappen}
         <details class="aufklappen"><summary>Warum?</summary>
           <p>${schuetze(inhalt.warum)}</p><p>${schuetze(inhalt.fertigWenn)}</p>
+          ${(inhalt.warumDetails ?? []).map(t => `<p>${schuetze(t)}</p>`).join("")}
           ${schritt.etappen.map(INHALT.textFuer).filter(t => t.communityZeit).map(t => `<p>${schuetze(t.communityZeit)}</p>`).join("")}
         </details></li>`;
     }
@@ -248,6 +249,7 @@
           <summary>Warum?</summary>
           <div class="aufklapp-inhalt">
             <p class="warum">${schuetze(inhalt.warum)}</p>
+            ${(inhalt.warumDetails ?? []).map(t => `<p>${schuetze(t)}</p>`).join("")}
             ${mehr}
           </div>
         </details>
