@@ -2144,7 +2144,7 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   return `${ids}|0`;
 };
 
-window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [], perks = []) {
+window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [], perks = [], { unlock = false, defer133 = false } = {}) {
   const data = window.EC_GUIDE_DATA;
   const [studyText, node] = run.importString.split("|");
   const studies = new Set(studyText.split(",").map(Number));
@@ -2153,6 +2153,10 @@ window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [
   const budget = Math.max(0, Math.floor(Number(totalTT) || 0) - run.nodeTT);
   const spent = () => [...studies].reduce((sum, id) => sum + data.studyCosts[id], 0);
   const requirements = {
+    61: [51], 71: [61], 72: [61], 73: [61], 81: [71], 82: [72], 83: [73],
+    91: [81], 92: [82], 93: [83], 101: [91], 102: [92], 103: [93],
+    111: [101, 102, 103], 121: [111], 122: [111], 123: [111],
+    131: [121], 132: [122], 133: [123], 141: [131], 142: [132], 143: [133],
     21: [11], 31: [21], 33: [22], 41: [31], 62: [42],
     151: [141, 142, 143], 161: [151], 162: [151], 171: [161, 162], 181: [171],
     191: [181], 192: [181], 193: [181], 211: [191], 212: [191], 213: [193], 214: [193],
@@ -2166,6 +2170,7 @@ window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [
     const next = new Set(studies);
     for (const id of ids) {
       if (next.has(id)) continue;
+      if (defer133 && id >= 133) return null;
       if (exclusivePairs.some(pair => pair.includes(id) && pair.some(other => other !== id && next.has(other)))) return null;
       const required = requirements[id] ?? [];
       if (required.length && !required.some(requiredId => next.has(requiredId))) return null;
@@ -2201,6 +2206,16 @@ window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [
 
   // EC11/12 need deliberately narrow trees; extra branches are neutral at best and can block the required path.
   if (![11, 12].includes(run.ec)) {
+    // Complete sparse early trees before optional side studies. Keep the route's
+    // chosen paths; outside a challenge all three dimension types still work.
+    const dimension = [71, 72, 73].find(id => studies.has(id)) ?? (run.ec === 1 ? 72 : 73);
+    const pace = [121, 122, 123].find(id => studies.has(id))
+      ?? (perks.includes(31) && !perks.includes(70) ? 122 : 121);
+    for (const id of [61, dimension, dimension + 10, dimension + 20, dimension + 30, 111,
+      pace, pace + 10, pace + 20, 151, 161, 162, 171]) {
+      if (!unlock && ((id === 162 && [2, 10].includes(run.ec)) || (id === 171 && [1, 10].includes(run.ec)))) continue;
+      tryBundle([id]);
+    }
     const hasFirstThreeClears = [54, 55, 56].every((perk, index) => (clears[index] ?? 0) > 0 || perks.includes(perk));
     tryBundle([181], hasFirstThreeClears);
 
@@ -2229,12 +2244,12 @@ window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [
       for (const [, finalStudy] of branches) tryBundle([finalStudy]);
     }
 
-    const idsWork = ![2, 10].includes(run.ec);
-    const tdsWork = ![1, 10].includes(run.ec);
+    const idsWork = unlock || ![2, 10].includes(run.ec);
+    const tdsWork = unlock || ![1, 10].includes(run.ec);
     tryBundle([151, 161]);
     tryBundle([21], idsWork);
     tryBundle([21, 31, 41]);
-    tryBundle([33], run.run !== "EC4x5");
+    tryBundle([33], unlock || run.run !== "EC4x5");
     tryBundle([62], (clears[4] ?? 0) > 0 || perks.includes(57));
     tryBundle([151, 162], idsWork);
     tryBundle([151], tdsWork);

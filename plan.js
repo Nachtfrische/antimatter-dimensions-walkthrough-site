@@ -587,7 +587,11 @@
     const baeume = [];
     for (const zeile of String(lauf.farmTree ?? "").split("\n")) {
       for (const original of zeile.match(/\d{2,3}(?:,\d{2,3})*\|\d{1,2}/g) ?? []) {
-        const importString = (p.clears?.[4] ?? 0) > 0 || hat(p.perks, 57) ? original : original.replace(",62,", ",");
+        const farmTree = lauf.ec !== 6 && hat(p.perks, 31) && !hat(p.perks, 70)
+          ? original.replace(/\b(121|131|141)\b/g, id => Number(id) + 1) : original;
+        const importString = DATEN.planRunTree({ ...lauf, importString: farmTree },
+          Math.max(studyBudget(p), lauf.readyTT), p.clears, p.perks,
+          { unlock: true, defer133: lauf.ec === 8 && !original.split("|")[0].split(",").includes("133") }).importString;
         const beschriftung = zeile.slice(0, zeile.indexOf(original)).replace(/[\s:·–-]+$/u, "").trim();
         baeume.push({
           bezeichnung: (beschriftung || `Baum für die Freischaltbedingung von ${lauf.run}`) + ` · ${baumKosten(importString)} TT; ${lauf.nodeTT} TT frei lassen`,
@@ -707,6 +711,16 @@
         werte,
         baeume: freischaltBaeume(lauf, p),
         baeumeSichtbar: aktuell >= lauf.readyTT,
+        ...(!erfuellt && lauf.ec === 1 ? { inhalt: {
+          soGehts: [
+            `Eternities farmen bis ${lauf.unlock}.${p.vorschau ? " Prüfe den aktuellen Zähler im Spiel." : ` Dein Save: ${zahl(r.eternities)}; es fehlen ${zahl(Math.max(0, 20000 * lauf.tier - (r.eternities ?? 0)))}.`} Außerhalb einer Challenge respecen, eternitieren und den Freischalt-Tree laden. Danach Respec AUS lassen; 30 TT für EC1 reservieren.`,
+            "Eternity-Autobuyer EIN: Modus Eternity at X EP, Wert 0, Dynamic amount AUS. Globale Autobuyer, AD1–8 auf Buy max, Tickspeed, Infinity Dimensions und Time Dimensions EIN; bezahlbare TDs und Eternity-Upgrades kaufen.",
+            "Crunch-Autobuyer EIN: X times highest IP auf 1e112, Dynamic amount AUS. Dimboost-Autobuyer AUS; Galaxy-Autobuyer EIN, unbeschränkt, Buy max bei 0 Sekunden. So kann die Farm ohne gehaltene Tasten laufen.",
+            "Prüfe nach einigen Resets, ob der Eternity-Zähler steigt. Wenn die Farm stockt: Crunch-Faktor 1e41 ausprobieren und Dimboost auf 0,3 Sekunden einschalten; sobald wiederholt schnelle Eternities gelingen, weiterlaufen lassen. Die Dauer hängt von deiner tatsächlich gemessenen Rate ab.",
+            `Bei mindestens ${lauf.unlock}: Eternity-Autobuyer AUS, EC1-Knoten für 30 TT kaufen. Dimboost und Galaxy wieder EIN/unbeschränkt auf 0 Sekunden; ${runTree.split("|")[0].split(",").includes("181") ? "mit TS181 im Run Crunch-Autobuyer AUS" : "Crunch für den EC1-Push auf X times highest IP = 1e70 stellen"}. Dann zum Run-Tree wechseln und EC1 starten; Eternity-Autobuyer im Lauf wieder EIN auf 0 EP.`,
+          ],
+          fertigWenn: `Mindestens ${lauf.unlock} erreicht und der EC1-Knoten gekauft.`,
+        } } : {}),
         ...(!erfuellt && lauf.ec === 8 ? { inhalt: { soGehts: [
           "Respec aktivieren, eternitieren und zuerst den Freischalt-Baum A ohne TS133 laden. TT für den EC-Knoten frei halten.",
           lauf.tier === 1 ? "Replicanti und RGs aufbauen. Bei ungefähr e3590 IP TS133 und TS143 manuell dazukaufen; dabei nicht respecen."
