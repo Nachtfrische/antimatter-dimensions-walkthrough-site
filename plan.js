@@ -555,7 +555,8 @@
       const lauf = DATEN.route.find(r => r.run === laufSchritt.werte.run);
       // This is an ordered route, not a simulated production forecast. Only
       // apply the completion and TT target the preceding steps explicitly ask for.
-      stand = { ...stand, clears: [...stand.clears], totalTT: Math.max(stand.totalTT ?? 0, lauf.readyTT),
+      const farmZiel = teil.schritte.some(s => s.gruppe === "ecTt") ? lauf.readyTT : 0;
+      stand = { ...stand, clears: [...stand.clears], totalTT: Math.max(stand.totalTT ?? 0, farmZiel),
         currentChallenge: { requirementBits: (stand.currentChallenge?.requirementBits ?? 0) & ~(1 << lauf.ec) },
         studies: [], resources: { ...stand.resources }, vorschau: true };
       stand.clears[lauf.ec - 1] = lauf.tier;
@@ -685,14 +686,19 @@
     const farm = epFarmAufbau(p, lauf.readyTT);
     const imLauf = (p.currentChallenge?.eternity ?? 0) === lauf.ec;
     const freigeschaltet = (p.currentChallenge?.eternityUnlocked ?? 0) === lauf.ec;
+    // EC12 hat einen festen vollstaendigen Tree, aber Ready-TT ist nur ein
+    // Staerkerichtwert. Wiederholte Realities koennen mit ihren Boni frueher fertig sein.
+    const frueherVersuch = !imLauf && lauf.ec === 12 && (p.realities ?? 0) > 0
+      && aktuell < lauf.readyTT && (clears[10] ?? 0) >= 5
+      && baumKosten(runTree) + lauf.nodeTT <= studyBudget(p);
     const schritte = [];
-    if (aktuell < lauf.readyTT && !imLauf) {
+    if (aktuell < lauf.readyTT && !imLauf && !frueherVersuch) {
       schritte.push(leererSchritt(KONKRETE_SCHRITTE.ecTt.schrittId, "ecTt", {
         werte,
         baeume: farm.baeume,
         baeumeSichtbar: true,
         inhalt: {
-          warum: "Der TT-Richtwert gilt für den folgenden Challenge-Tree. Der EP-Farm-Tree hier ist bereits mit deinem jetzigen TT-Bestand bezahlbar und enthält keinen EC-Knoten.",
+          warum: "Der TT-Richtwert ist eine Empfehlung für ausreichend Produktionsstärke, keine zusätzliche Freischaltbedingung. Tree- und Knotenkosten sind davon getrennt. Der EP-Farm-Tree hier ist bereits mit deinem jetzigen TT-Bestand bezahlbar und enthält keinen EC-Knoten.",
           soGehts: [...farm.soGehts,
             "Erst danach auf den Run-Tree im folgenden Challenge-Schritt wechseln."],
         },
@@ -767,6 +773,23 @@
         soGehts: [`${lauf.run} läuft bereits. Starte keine andere Challenge und respec nicht; damit würdest du den Lauf zurücksetzen.`,
           `Erreiche ${lauf.goal} und schließe die Challenge mit Eternity ab.`, tipText],
       } } : {}),
+      ...(frueherVersuch ? { frueherVersuch: true,
+        baeume: [...runBaeumeFuer(lauf, runTree), {
+          bezeichnung: "Nur bei gescheitertem Versuch: EP-Farm-Tree", importString: farm.baeume[0].importString,
+        }],
+        inhalt: {
+          kurz: `Versuche ${lauf.run} jetzt mit deinen ${zahl(aktuell)} TT.`,
+          warum: `Der vollständige Run-Tree kostet inklusive EC-Knoten ${zahl(baumKosten(runTree) + lauf.nodeTT)} TT. ${zahl(lauf.readyTT)} TT sind ein Guide-Richtwert, keine Eintrittsbedingung. Glyphs, Perks und Reality-Upgrades können den früheren Abschluss ermöglichen; Bezahlbarkeit allein garantiert ihn nicht.`,
+          soGehts: [
+            `Zuerst ${lauf.run} versuchen; nicht vorsorglich auf ${zahl(lauf.readyTT)} TT farmen. Respecen, außerhalb der Challenge eternitieren und den vollständigen TD+Passive-Run-Tree laden. TS71/72 ungekauft lassen.`,
+            `EC12 starten. Eternity-Autobuyer EIN auf 0 EP, Dynamic amount AUS; damit beim Erreichen von ${lauf.goal} sofort abgeschlossen wird. Die Zeitangabe ist das Limit, keine Wartezeit oder Dauerprognose.`,
+            "Bei Erfolg direkt mit der nächsten noch offenen EC12-Stufe weitermachen. Solange die Läufe gelingen, sind weder zusätzlicher TT-Farm noch ein neuer Save-Import nötig.",
+            `Bei Zeitlimit oder Stillstand diese Folge stoppen. Challenge verlassen, respecen, außerhalb der EC eternitieren und den unten bezeichneten EP-Farm-Tree laden. ${zahl(lauf.readyTT)} TT bleiben eine mögliche Orientierung beim Nachfarmen, kein Pflichtziel.`,
+            `Nur für diesen Farm nach einem Fehlschlag: ${farm.baeume[0].importString.split("|")[0].split(",").includes("121") ? activeHandgriff(p) : "Eternity-Autobuyer für den EP-Push ausschalten; RGs automatisch kaufen lassen."} Mit TS181 Crunch-Autobuyer AUS. TDs und ×5 EP kaufen, EP/TT nachfarmen; nach spürbaren Verbesserungen denselben EC erneut versuchen. Für weitere Tree-Wechsel den aktualisierten Save einlesen.`,
+          ],
+          fertigWenn: `EC12 zeigt mindestens ${lauf.tier}/5 Abschlüsse. Bei einem Fehlschlag nicht zur nächsten Stufe springen.`,
+        },
+      } : {}),
       ...(hat(p.perks, 73) ? { hinweis: "ECB ist gekauft: Der Lauf kann mehrere Stufen abschließen. Spiel bis zum nächsten erreichbaren Ziel; danach den Save neu einlesen, damit übersprungene Stufen nicht nochmals geplant werden." } : {}),
     }));
     return {

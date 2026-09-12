@@ -1251,6 +1251,7 @@
         `EC${w.ec}-Knoten kaufen; die beim Tree genannten TT dafür frei lassen. Erst danach zum Run-Tree wechseln.`,
       ],
     };
+    if (schritt.gruppe === "ecRun" && schritt.frueherVersuch) return { ...text, kurz: "Challenge jetzt versuchen" };
     if (schritt.gruppe === "ecRun") return { ...text, kurz: "Challenge spielen",
       soGehts: schritt.baumBeibehalten ? [
         `Den gemeinsamen Tree oben behalten; kein Respec oder erneuter Import nötig. EC${w.ec} starten, bei ${w.goal} mit Eternity abschließen.`, w.tip,
