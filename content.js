@@ -380,7 +380,7 @@
       soGehts: [
         "Eternity → Time Studies: Setz Respec time studies, drück Eternity und lade den Dilation-Baum unten über Import.",
         "Eternity → Time Dilation: Drück Dilate time.",
-        "Eternity: Drück im ersten dilatierten Lauf Eternity, sobald der Knopf verfügbar ist. In späteren Läufen kaufst du unter Time Dilation zuerst das nächste ×3-TP-Upgrade.",
+        "Eternity: Drück im ersten dilatierten Lauf Eternity, sobald der Knopf verfügbar ist. In späteren Läufen ×3 TP und ×2 DT nach der Kaufreihenfolge im Hinweis ausbauen; nach ×3 TP bei zusätzlichem TP-Gewinn eternitieren.",
         "{tdHandgriff}",
         "Für EP außerhalb von Dilation: Respec time studies aktivieren und den dilatierten Lauf mit Eternity beenden. Erst danach den EP-Push-Baum importieren; ein Import allein entfernt keine alten Studies.",
         "{activeHandgriff}",
@@ -455,15 +455,16 @@
 
     realityRmAuf15Pushen: {
       phase: "reality",
-      kurz: "Push den Reality-Knopf von {standRM} auf {zielRM} RM — bis mindestens e{zielEP} EP.",
+      kurz: "Warte mit der Reality: Ziel sind {zielRM} RM Gewinn statt aktuell etwa {standRM}.",
       warum: "Das RM-Ziel finanziert {zielKauf}; du hast bereits {bankRM} RM im Vorrat. "
         + "Dafür brauchst du {zielRM} weitere RM. Der EP-Richtwert berücksichtigt die Grundformel; die Anzeige im Spiel entscheidet über den Reset.",
       soGehts: [
         "{rmStart}",
         "{activeHandgriff}",
-        "Push den Rekord dieser Reality bis mindestens e{zielEP} EP.",
+        "EP-Richtwert ohne zusätzliche RM-Multiplikatoren: e{zielEP}. Entscheidend sind {zielRM} RM im Reality-Knopf; zeigt er sie früher, musst du nicht weiter bis zum EP-Richtwert warten.",
         "{dilationWechsel}",
         "Empfehlung: Warte, bis der Reality-Knopf mindestens {zielRM} RM anzeigt. Dann ist zusammen mit deinen {bankRM} RM genug für {zielKauf} da. Ein früherer Reset ist möglich, sobald die Reality-Study gekauft ist, finanziert aber noch nicht die ganze Liste.",
+        "Das ist ein Kaufziel, keine Garantie für einen schnellen Push in diesem Lauf. Prüfe nach einem Dilation-Ausbau und anschließendem EP-Push den RM-Zuwachs für 5–10 Minuten. Bei kaum Zuwachs nicht endlos weiterwarten: den nächsten bezahlbaren DT-/TP-Ausbau und seinen Timer prüfen. Ist auch der zu weit weg, einen Lauf für bessere Glyphs oder eine konkret passende Upgrade-Bedingung einplanen; der kleine RM-Gewinn allein ist kein Reset-Grund.",
         "Nach weiterem Push den Save neu einlesen: Der Guide zeigt dann die Käufe mit dem neuen Gesamtbestand und die aktuelle Glyph-Auswahl.",
       ],
       fertigWenn: "Auf dem Reality-Knopf mindestens {zielRM} RM stehen.",

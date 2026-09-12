@@ -1076,7 +1076,7 @@
       return (effekte.includes("timeEP") ? 10000 : 0)
         + (effekte.includes("powerpow") ? 8000 : 0)
         + (effekte.includes("timepow") ? 6000 : 0)
-        + (effekte.includes("powermult") ? 3000 : 0)
+        + (effekte.includes("powermult") && !hat(p.realityUpgrades, 10) ? 3000 : 0)
         + Math.sqrt(Math.max(1, Number(glyph.level) || 1) * Math.max(1, glyph.strength ?? 1 + (glyph.rarity ?? 0) / 40));
     };
     const sortiert = bestand.slice().sort((a, b) => score(b) - score(a));
@@ -1090,7 +1090,7 @@
         || (g.type === "replication" && glyphEffekte(g).includes("replicationspeed") && glyphEffekte(g).length >= 2)
         || (g.type === "dilation" && glyphEffekte(g).includes("dilationDT"));
       const qualitaet = g => Math.sqrt(Math.max(1, g.level) * Math.max(1, g.strength ?? 1 + (g.rarity ?? 0) / 40));
-      const kandidaten = ["pprt", "prrt", "prtd", "rrtd", "rtdd"].map(code => {
+      const kandidaten = ["pprt", "pptd", "prrt", "prtd", "rrtd", "rtdd", "tddd"].map(code => {
         const pool = auswahl.filter(gut).sort((a, b) => qualitaet(b) - qualitaet(a));
         const set = [];
         for (const typ of code) {
@@ -1133,10 +1133,12 @@
     // Pins: einmalige Upgrades zuerst; das erste Black Hole während Reihe 3.
     const blackHole = mitBlackHole && !p.firstBlackHoleUnlocked && !p.blackHoles?.[0]?.unlocked
       && hat(p.realityUpgrades, 8) && hatFreischaltung(p, 11, 15);
+    const glyphZiel = hat(p.realityUpgrades, 9) && hat(p.realityUpgrades, 13) ? realityGlyphZiele(p)[0] : null;
     const zielId = !hat(p.realityUpgrades, 8) ? 8
         : offen[0]?.id
           ?? (ru9NochMoeglich(p) && !hat(p.realityUpgrades, 9) ? 9 : ru13NochMoeglich(p) ? 13 : null)
-          ?? [9,13,12,14,11,15,16,17,18,19,20,21,22,23,24,25].find(id => !hat(p.realityUpgrades, id));
+          ?? glyphZiel?.id
+          ?? [9,13,12,15,16,17,18,19,20,25,23,21,22,24,14,11].find(id => !hat(p.realityUpgrades, id));
     const kosten = (p.realities ?? 0) === 1 ? rowOneMissing
       : offen.length ? offen.reduce((sum, kauf) => sum + kauf.kosten, 0) : blackHole ? 0 : RU_KOSTEN.get(zielId) ?? 1;
     const ziel = Math.max(1, kosten + (blackHole ? 100 : 0) - bank);
@@ -1382,7 +1384,11 @@
 
   function empfohlenerGlyph(p) {
     const choices = p.upcomingGlyphs ?? [];
-    let index = choices.findIndex(glyph => glyph.type === "time" && glyph.effects?.includes("timeEP"));
+    const hatTimeEP = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])].some(g => glyphEffekte(g).includes("timeEP"));
+    const hatDT = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])].some(g => glyphEffekte(g).includes("dilationDT"));
+    let index = hatTimeEP && !hatDT && hat(p.realityUpgrades, 13)
+      ? choices.findIndex(g => glyphEffekte(g).includes("dilationDT")) : -1;
+    if (index < 0 && !hatTimeEP) index = choices.findIndex(glyph => glyph.type === "time" && glyph.effects?.includes("timeEP"));
     if (index < 0) index = choices.findIndex(glyph => glyph.type === "power"
       && glyph.effects?.includes("powerpow"));
     return { glyph: index >= 0 ? choices[index] : null, index };
@@ -1390,6 +1396,8 @@
 
   function realityResetSchritte(p) {
     const { glyph, index } = empfohlenerGlyph(p);
+    const gesichert = realityGlyphZiele(p).filter(z => z.aktiv === 4).map(z => z.id);
+    p = { ...p, realityUpgradeUnlocks: [...new Set([...(p.realityUpgradeUnlocks ?? []), ...gesichert])] };
     const bank = Math.max(0, Math.floor(p.resources?.realityMachines ?? 0));
     const gewinn = Math.max(0, Math.floor(p.gainedRMEstimate ?? 0));
     const ru8Offen = hat(p.realityUpgradeUnlocks, 8) || hat(p.realityUpgrades, 8);
@@ -1397,9 +1405,11 @@
     const nachKauf = bank + gewinn - (kauf?.kaufIds ?? []).reduce((sum, id) => sum + RU_KOSTEN.get(id), 0);
     const blackHole = ru8Offen && !p.firstBlackHoleUnlocked && !p.blackHoles?.[0]?.unlocked
       && hatFreischaltung(p, 11, 15) && nachKauf >= 100;
+    const naechstesGlyphZiel = hat(p.realityUpgrades, 13) ? realityGlyphZiele(p).find(z => z.bestand.length >= 4) : null;
+    const auswahl = naechstesGlyphZiel ? naechstesGlyphZiel.bestand.slice(0, 4) : glyphAuswahl(p, glyph);
     const werte = {
       glyphEmpfehlung: glyphText(glyph, index),
-      glyphSet: glyphSetAusBestand(p, glyph) ?? glyphSetVorhanden(p)
+      glyphSet: (glyphListe(auswahl) || glyphSetVorhanden(p))
         ?? "den gerade erhaltenen Glyph",
       naechsteReality: (p.reality ?? ((p.realities ?? 0) + 1)) + 1,
       gewinnRM: gewinn,
@@ -1417,7 +1427,8 @@
           + (ru8Offen ? "Paradoxically Attain ist bereits gesichert; deshalb darf Auto Achievements an bleiben." : "Der ausgeschaltete Achievement-Timer bewahrt die Bedingung für Paradoxically Attain im nächsten Lauf."),
         warumDetails: glyph ? [glyphGrund(glyph)] : ["Bei den angebotenen Glyphs hat Time mit EP-Multiplikator Vorrang für frühe EP-Käufe, danach Power mit AD-Potenz für den Produktions-Push. Ohne ausgelesenes passendes Angebot ist keine konkrete Angebotsnummer belegbar."] } }),
       leererSchritt(KONKRETE_SCHRITTE.realitySet.schrittId, "realitySet", { werte,
-        inhalt: { warumDetails: glyphSetGruende(p, glyphAuswahl(p, glyph)) } }),
+        ...(naechstesGlyphZiel ? { hinweis: `Dieses Set ist für ${ruName(naechstesGlyphZiel.id)}: vier Glyphs mit jeweils ${naechstesGlyphZiel.kriterium}. Es kann langsamer als dein normales Farm-Set sein; bis zum nächsten Reality-Abschluss beibehalten.` } : {}),
+        inhalt: { warumDetails: naechstesGlyphZiel ? [`Das nächste Requirement braucht ${naechstesGlyphZiel.kriterium}; deshalb haben passende Glyphs hier Vorrang vor dem normalen Farm-Set.`] : glyphSetGruende(p, auswahl) } }),
       ...(kauf ? [blackHole ? { ...kauf, inhalt: { ...kauf.inhalt, soGehts: [
         "Reality → Upgrades: Kauf in dieser Reihenfolge {ruListe}.",
         "Die verbleibenden {restRM} RM sind für das Black Hole im nächsten Schritt reserviert.",
@@ -1726,7 +1737,7 @@
         schritte.push(leererSchritt(KONKRETE_SCHRITTE.realityRm.schrittId, "realityRm", {
           werte: { standRM: gewinn, ...minimum, activeHandgriff: epHandgriff },
           ...(p.realityAvailable ? { inhalt: {
-            kurz: `Reality ist schon möglich. Empfehlung: Push von etwa ${zahl(gewinn)} auf ${zahl(minimum.zielRM)} RM Gewinn.`,
+            kurz: `Warte mit der Reality: Push von etwa ${zahl(gewinn)} auf ${zahl(minimum.zielRM)} RM Gewinn.`,
           } } : {}),
           baeume: [{ bezeichnung: `EP-Push-Baum bis ${minimum.zielRM} RM`,
             importString: epBaum }].filter(b => b.importString),
@@ -1760,6 +1771,19 @@
     };
   }
 
+  function realityGlyphZiele(p) {
+    if (glyphSlots(p) < 4) return [];
+    const aktiv = (p.activeGlyphs ?? []).filter(g => g.type !== "companion");
+    const alle = [...aktiv, ...(p.inventoryGlyphs ?? []).filter(g => g.type !== "companion")];
+    return [[16, g => (g.rarity ?? (g.strength - 1) * 40) >= 20, "mindestens 20 % Seltenheit"],
+      [17, g => (g.effectCount ?? glyphEffekte(g).length) >= 2, "mindestens zwei Effekte"],
+      [18, g => g.level >= 10, "mindestens Level 10"]]
+      .filter(([id]) => !hat(p.realityUpgrades, id) && !hat(p.realityUpgradeUnlocks, id))
+      .map(([id, passt, kriterium]) => ({ id, kriterium, aktiv: aktiv.filter(passt).length, bestand: alle.filter(passt) }))
+      .sort((a, b) => Number(b.aktiv === 4) - Number(a.aktiv === 4)
+        || Number(b.bestand.length >= 4) - Number(a.bestand.length >= 4) || a.id - b.id);
+  }
+
   function realitySpaeteZiele(p) {
     const s = [];
     const offen = id => !hat(p.realityUpgrades, id) && !hat(p.realityUpgradeUnlocks, id);
@@ -1774,19 +1798,14 @@
         [`Du hast ${zahl(p.resources?.eternities ?? 0)} Eternities. Mit kurzen automatischen Eternities bis 10 Millionen farmen; der Eternal Amplifier verstärkt den Ertrag.`,
           "Ein Time-Glyph mit Eternity-Multiplikator hilft, falls du ihn ohnehin im Set hast. Nach dem Ziel The Eternal Flow (Reihe 3, Spalte 4) für 50 RM kaufen."], "The Eternal Flow ist gekauft."));
     }
-    const glyphZiele = [[16, g => (g.rarity ?? (g.strength - 1) * 40) >= 20, "mindestens 20 % Seltenheit"],
-      // RU17 zaehlt die Bits der Effektmaske (reality-upgrades.js), nicht die
-      // benannten Effekte. Sonst faellt ein Time-Glyph mit timeshardpow durch.
-      [17, g => (g.effectCount ?? glyphEffekte(g).length) >= 2, "mindestens zwei Effekte"],
-      [18, g => g.level >= 10, "mindestens Level 10"]];
-    const naechstes = glyphZiele.find(([id]) => offen(id));
+    const naechstes = realityGlyphZiele(p)[0];
     if (naechstes) {
-      const [id, passt, kriterium] = naechstes;
-      const vorhanden = alle.filter(passt).length;
-      s.push(aktion("spaeteRealityUpgrades", "realityGlyphZiel", `${ruName(id, true)}: beende eine Reality mit vier passenden Glyphs.`,
-        [`Alle vier brauchen ${kriterium}. Im Bestand passen ${vorhanden}, davon ${aktiv.filter(passt).length} aktiv.`,
-          vorhanden < 4 ? "Farm zuerst die noch fehlenden Glyphs in kurzen Realities. Bewahre die passenden Exemplare auf."
-            : aktiv.filter(passt).length < 4 ? "Beim nächsten Reality-Reset Glyph Respec aktivieren, anschließend vier passende Glyphs ausrüsten und mit diesem Set einen weiteren Lauf abschließen."
+      const { id, kriterium, aktiv: passendeAktiv } = naechstes;
+      const vorhanden = naechstes.bestand.length;
+      s.push(aktion("spaeteRealityUpgrades", "realityGlyphZiel", `Nächstes Upgrade: ${ruName(id, true)}.`,
+        [`Alle vier brauchen ${kriterium}. Im Bestand passen ${vorhanden}, davon ${passendeAktiv} aktiv.`,
+          vorhanden < 4 ? "Bewahre passende Glyphs aus weiteren Realities auf. Ein vorgezogener Glyph-Farmlauf ist ein eigener Zweck; der folgende RM-Plan nennt das Kaufziel."
+            : passendeAktiv < 4 ? "Beim nächsten geplanten Reality-Reset Glyph Respec aktivieren. Danach das passende Set aus dem Set-Schritt ausrüsten und damit einen weiteren Lauf abschließen; jetzt noch kein zusätzlicher Reset allein für den Wechsel."
               : "Das aktive Set erfüllt die Glyph-Bedingung. Beim nächsten Reality-Abschluss wird sie gespeichert.",
           `Spar 1.500 RM für ${ruName(id)}. Ein gespeichertes Requirement allein gibt den Bonus noch nicht.`], `${ruName(id)} zeigt Cost: 1.50e3 RM oder ist gekauft.`,
         ruGrund(id) + ` Die Bedingung prüft beim Reality-Abschluss vier aktive Glyphs mit jeweils ${kriterium}; bloßer Inventarbesitz zählt nicht. Deshalb wird vor dem Lauf genau dieses Merkmal geprüft.`));
@@ -2858,9 +2877,26 @@
     return result;
   }
 
+  function dilationKaufHinweis(p) {
+    const hinweise = ["Dilation-Käufe nach den Pins: ×3 TP vor ×2 DT; kostet ×3 TP mindestens 1,33-mal so viel wie ×2 DT, zuerst ×2 DT. Danach einmalige Upgrades, die TG-Schwelle zuletzt."];
+    if (!hat(p.dilationUpgrades, 6)) hinweise.push("Ausnahme: AD-Multiplikator für 5e7 DT vor ×2 DT für e8 und doppelten TGs für 5e6 kaufen.");
+    if (!hat(p.dilationUpgrades, 9)) hinweise.push("Dilation-Strafe für e11 DT reduzieren, bevor du ×2 DT für e11 kaufst.");
+    if (!hat(p.dilationUpgrades, 10)) hinweise.push("Bei e15 DT zuerst ×2 DT, danach den TT-Generator kaufen.");
+    const r = p.dilationRebuyables;
+    if (r && [1,2,3].every(id => Number.isFinite(r[id]))) {
+      const dt = 1e4 * 10 ** r[1], tp = 1e7 * 20 ** r[3], tg = 1e6 * 100 ** r[2];
+      if ([dt,tp,tg].every(Number.isFinite)) hinweise.push(`Nächste Kosten in diesem Save: ×3 TP ${zahl(tp)} DT; ×2 DT ${zahl(dt)} DT; TG-Schwelle ${zahl(tg)} DT. Nach jedem Kauf die neue Preisrelation prüfen.`);
+    }
+    hinweise.push("Ohne TGR setzt der TG-Schwellenkauf deine DT zurück: vorher andere vorgesehene Käufe erledigen. Nach r137 für EP vorzugsweise erst nach weiteren TGs wechseln (etwa 6 als Pin-Richtwert) oder für TD5–8; nach ×3 TP die zusätzlichen TP mit einer dilatierten Eternity abholen.");
+    return hinweise.join(" ");
+  }
+
   function planeFuer(profil) {
     const plan = phasenPlan(profil);
     const schritte = plan.schritte.filter(schritt => schritt.id !== KONKRETE_SCHRITTE.ecReload.schrittId);
+    for (const schritt of schritte.filter(s => ["dilationZyklus", "realityRm"].includes(s.gruppe))) {
+      schritt.hinweis = [schritt.hinweis, dilationKaufHinweis(profil)].filter(Boolean).join(" ");
+    }
     // Beide Reality-Routen brauchen auch nach e4000 den Dilation-Aufbau.
     for (const schritt of schritte.filter(s => s.gruppe === "realityRm")) {
       const { farmBaum } = dilationAufbau(profil);
@@ -2911,7 +2947,7 @@
     // Reload is a UI action, not one of the player's next five game actions.
     if (profil.gainedRMIsEstimate) {
       for (const schritt of schritte.filter(s => ["realityRm", "realityReset"].includes(s.gruppe))) {
-        schritt.hinweis = "Der RM-Wert hier ist eine Basis-Schätzung aus dem EP-Rekord. Zusätzliche RM-Multiplikatoren und der noch nicht ausgezahlte EP-Ertrag können ihn erhöhen. Vor dem Reset die Anzeige im Reality-Knopf prüfen.";
+        schritt.hinweis = [schritt.hinweis, "Der RM-Wert hier ist eine Basis-Schätzung aus dem EP-Rekord. Zusätzliche RM-Multiplikatoren und der noch nicht ausgezahlte EP-Ertrag können ihn erhöhen. Vor dem Reset die Anzeige im Reality-Knopf prüfen."].filter(Boolean).join(" ");
       }
     }
     if (schritte.length <= MAX_SICHTBAR && schritte.at(-1)?.gruppe === "ruJetztKaufen") {
