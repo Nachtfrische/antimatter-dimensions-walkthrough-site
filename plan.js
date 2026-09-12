@@ -429,7 +429,7 @@
 
   function epFarmAufbau(p, zielTT) {
     const budget = studyBudget(p);
-    const tree = DATEN.planFarmTree(null, budget, p.clears, p.perks);
+    const tree = DATEN.planFarmTree(null, budget, p.clears, p.perks, p.achievementIds);
     const jetztStudies = new Set(tree?.split("|")[0].split(",").map(Number) ?? []);
     const pfadNamen = { 71: "Antimatter Dimensions", 72: "Infinity Dimensions", 73: "Time Dimensions",
       121: "Active", 122: "Passive", 123: "Idle" };
@@ -439,7 +439,7 @@
       return alt && neu && alt !== neu ? [`${pfadNamen[alt]} → ${pfadNamen[neu]}`] : [];
     });
     const baeume = tree ? [{ bezeichnung: `Jetzt: EP-Farm-Tree · ${baumKosten(tree)} TT`, importString: tree }] : [];
-    const upgrades = DATEN.epFarmStages(p.clears, p.perks).filter(stage => stage.tt > budget && stage.tt <= zielTT);
+    const upgrades = DATEN.epFarmStages(p.clears, p.perks, p.achievementIds).filter(stage => stage.tt > budget && stage.tt <= zielTT);
     // Gleich teure Varianten sind dieselbe Etappe, zuletzt steht die bevorzugte.
     const etappen = [...new Map(upgrades.map(stage => [stage.tt, stage])).values()];
     const studies = new Set([tree, ...etappen.map(stage => stage.tree)].filter(Boolean)
@@ -457,7 +457,7 @@
       tree ? "Außerhalb einer Challenge Time Studies respecen, eternitieren und den mit Jetzt bezeichneten EP-Farm-Tree laden."
         : "Kauf die ersten AM- und IP-Theorems und beginne mit TS11. Die folgenden Bäume erst an ihrer TT-Marke laden.",
       ...(etappen.length ? [`Unterwegs bei ${etappen.map(stage => zahl(stage.tt)).join(", ")} TT auf den jeweils angegebenen Baum wechseln: Respec aktivieren, eternitieren, importieren.`] : []),
-      ...(hat(p.perks, 31) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree verwenden; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen."] : []),
+      ...(DATEN.usePassiveFarm(p.perks, p.achievementIds) && studies.has(122) ? ["Mit PASS den angegebenen Passive-Tree als Komfort-Fallback verwenden, solange r138 fehlt; dafür keine kurzen Eternities für TS121 vorbereiten. Replicanti-Galaxien automatisch kaufen lassen, sobald der RG-Autobuyer verfügbar ist; sonst mit R kaufen."] : []),
       ...(studies.has(121) ? [`Ab dem Baum mit TS121: ${activeHandgriff(p)}`] : []),
       ...(studies.has(181) ? ["Ohne TS181 nach vollen Replicanti-Galaxien crunchen. Sobald TS181 im Baum steht: Crunch-Autobuyer ausschalten, Dimboost/Galaxy unbeschränkt auf 0 s, Eternity-Autobuyer für den Push aus."]
         : studies.has(61) ? ["Nach vollen Replicanti-Galaxien crunchen; Eternity-Autobuyer für den abschließenden EP-Push ausschalten."] : []),
@@ -581,17 +581,17 @@
     if (lauf.ec === 10) {
       // EC10 braucht EP zum Freischalten, obwohl IM Lauf nur AD wirken.
       // Der TD-Farm reserviert hier bereits die 550 TT fuer den Knoten.
-      const tree = DATEN.planFarmTree(null, Math.max(studyBudget(p), lauf.readyTT) - lauf.nodeTT, p.clears, p.perks);
+      const tree = DATEN.planFarmTree(null, Math.max(studyBudget(p), lauf.readyTT) - lauf.nodeTT, p.clears, p.perks, p.achievementIds);
       return tree ? [{ bezeichnung: `EP-Tree für die Freischaltbedingung von ${lauf.run} · ${baumKosten(tree)} TT; ${lauf.nodeTT} TT frei lassen`, importString: tree }] : [];
     }
     const baeume = [];
     for (const zeile of String(lauf.farmTree ?? "").split("\n")) {
       for (const original of zeile.match(/\d{2,3}(?:,\d{2,3})*\|\d{1,2}/g) ?? []) {
-        const farmTree = lauf.ec !== 6 && hat(p.perks, 31) && !hat(p.perks, 70)
+        const farmTree = lauf.ec !== 6 && DATEN.usePassiveFarm(p.perks, p.achievementIds)
           ? original.replace(/\b(121|131|141)\b/g, id => Number(id) + 1) : original;
         const importString = DATEN.planRunTree({ ...lauf, importString: farmTree },
           Math.max(studyBudget(p), lauf.readyTT), p.clears, p.perks,
-          { unlock: true, defer133: lauf.ec === 8 && !original.split("|")[0].split(",").includes("133") }).importString;
+          { achievementIds: p.achievementIds, unlock: true, defer133: lauf.ec === 8 && !original.split("|")[0].split(",").includes("133") }).importString;
         const beschriftung = zeile.slice(0, zeile.indexOf(original)).replace(/[\s:·–-]+$/u, "").trim();
         baeume.push({
           bezeichnung: (beschriftung || `Baum für die Freischaltbedingung von ${lauf.run}`) + ` · ${baumKosten(importString)} TT; ${lauf.nodeTT} TT frei lassen`,
@@ -627,7 +627,7 @@
     const row23 = ids => ids.some(id => id >= 231 && id <= 234);
     const dilrVorhanden = (p.unspentTT ?? 0) >= 5000 && row23(p.studies ?? []);
     const dilrTree = hat(p.perks, 53)
-      ? DATEN.planFarmTree(null, studyBudget(p) - 5000, clears, p.perks) : null;
+      ? DATEN.planFarmTree(null, studyBudget(p) - 5000, clears, p.perks, p.achievementIds) : null;
     const dilrBereit = hat(p.perks, 53) && (dilrVorhanden
       || (dilrTree && row23(dilrTree.split("|")[0].split(",").map(Number))));
     const dilationMoeglich = dilrBereit || ((p.totalTT ?? 0) >= 12900
@@ -679,7 +679,7 @@
       routeIndex: laufIndex + 1,
     };
     const runTreePlan = typeof DATEN.planRunTree === "function"
-      ? DATEN.planRunTree(lauf, Math.max(studyBudget(p), lauf.readyTT), clears, p.perks)
+      ? DATEN.planRunTree(lauf, Math.max(studyBudget(p), lauf.readyTT), clears, p.perks, { achievementIds: p.achievementIds })
       : lauf.importString;
     const runTree = runTreePlan?.importString ?? runTreePlan ?? lauf.importString;
     const farm = epFarmAufbau(p, lauf.readyTT);
@@ -1658,7 +1658,7 @@
         return !z.istErledigt(p) && z.istNochMoeglich(p) && !hat(p.realityRequirementLocks, n);
       });
       const zielTT = DATEN.earlyEternityCheckpoints.find(c => c.tt > tt)?.tt
-        ?? Math.max(tt, DATEN.epFarmStages(p.clears, p.perks).at(-1).tt);
+        ?? Math.max(tt, DATEN.epFarmStages(p.clears, p.perks, p.achievementIds).at(-1).tt);
       const aufbau = epFarmAufbau(p, zielTT);
       const handgriffe = [
         ...(schutz.length ? [`Jetzt unter Reality → Upgrades mit Shift-Klick die offenen Schlösser bei ${schutz.map(n => ruName(n, true)).join("; ")} schließen. Bereits geschlossene Schlösser nicht erneut anklicken.`] : []),

@@ -2057,7 +2057,12 @@ window.EC_GUIDE_DATA = {
 
 // EP/TT-Push ist unabhaengig von der naechsten Challenge. Deren farmTree
 // reserviert Knotenkosten und erfuellt eine spezielle Ressourcenbedingung.
-window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = []) {
+// PASS ist ein Komfort-Fallback, kein allgemeiner Staerkevorrang vor Active.
+// r138 erlaubt automatische RGs auch mit TS131; ACT erspart den Bonus-Aufbau.
+window.EC_GUIDE_DATA.usePassiveFarm = (perks = [], achievementIds = []) =>
+  perks.includes(31) && !perks.includes(70) && !achievementIds.includes(138);
+
+window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = [], achievementIds = []) {
   const data = window.EC_GUIDE_DATA;
   const cost = tree => tree.split("|")[0].split(",").reduce((sum, id) => sum + data.studyCosts[id], 0);
   const stages = data.earlyEternityCheckpoints.filter(stage => stage.tt < 100);
@@ -2101,17 +2106,16 @@ window.EC_GUIDE_DATA.epFarmStages = function epFarmStages(clears = [], perks = [
       stages.push({ tt: cost(tree), tree });
     }
   }
-  // PASS ohne ACT: komfortable Farm ohne TS121-Aufbau und manuelle Active-RGs.
-  // Der Wechsel auf TD+171 aendert den Dimensionspfad, nicht diese Perk-Wahl.
-  return stages.map(stage => perks.includes(31) && !perks.includes(70)
+  // Ohne r138/ACT bleibt PASS die bequeme Farm; mit r138 gewinnt Active Vorrang.
+  return stages.map(stage => data.usePassiveFarm(perks, achievementIds)
     ? { ...stage, tree: stage.tree.replace(/\b(121|131|141)\b/g, id => Number(id) + 1) }
     : stage).sort((a, b) => a.tt - b.tt);
 };
 
-window.EC_GUIDE_DATA.planFarmTree = function planFarmTree(run, totalTT, clears = [], perks = []) {
+window.EC_GUIDE_DATA.planFarmTree = function planFarmTree(run, totalTT, clears = [], perks = [], achievementIds = []) {
   const data = window.EC_GUIDE_DATA;
   const budget = Math.max(0, Math.floor(Number(totalTT) || 0));
-  return data.epFarmStages(clears, perks).filter(stage => stage.tt <= budget).at(-1)?.tree ?? null;
+  return data.epFarmStages(clears, perks, achievementIds).filter(stage => stage.tt <= budget).at(-1)?.tree ?? null;
 };
 
 window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clears = [], perks = [], { ep = false, active = false, split = false } = {}) {
@@ -2144,7 +2148,7 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   return `${ids}|0`;
 };
 
-window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [], perks = [], { unlock = false, defer133 = false } = {}) {
+window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [], perks = [], { unlock = false, defer133 = false, achievementIds = [] } = {}) {
   const data = window.EC_GUIDE_DATA;
   const [studyText, node] = run.importString.split("|");
   const studies = new Set(studyText.split(",").map(Number));
@@ -2210,7 +2214,7 @@ window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [
     // chosen paths; outside a challenge all three dimension types still work.
     const dimension = [71, 72, 73].find(id => studies.has(id)) ?? (run.ec === 1 ? 72 : 73);
     const pace = [121, 122, 123].find(id => studies.has(id))
-      ?? (perks.includes(31) && !perks.includes(70) ? 122 : 121);
+      ?? (data.usePassiveFarm(perks, achievementIds) ? 122 : 121);
     for (const id of [61, dimension, dimension + 10, dimension + 20, dimension + 30, 111,
       pace, pace + 10, pace + 20, 151, 161, 162, 171]) {
       if (!unlock && ((id === 162 && [2, 10].includes(run.ec)) || (id === 171 && [1, 10].includes(run.ec)))) continue;

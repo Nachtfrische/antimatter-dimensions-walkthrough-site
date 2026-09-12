@@ -1206,7 +1206,7 @@
       if (s.has(72)) gruende.push(run && ec === 1 ? "Der ID-Pfad liefert Infinity Power, während TDs ausgeschaltet sind" : "Der ID-Pfad verstärkt Infinity Power und damit die Antimatter Dimensions");
       if (s.has(73)) gruende.push(s.has(171) ? "TD + TS171 erzeugt mehr zusätzliche Tickspeed-Upgrades aus Time Shards" : "Der TD-Pfad baut Time Shards und zusätzliche Tickspeed-Upgrades auf");
       if (s.has(122)) gruende.push(perks.includes(31) ? "Passive nutzt PASS: TS122 ×50 EP, TS142 ×e50 IP und mit TS132 dreifache Replicanti-Geschwindigkeit, ohne TS121-Vorbereitung" : "Passive liefert seine IP-/EP-Boni ohne vorbereitende kurze Eternities oder langen Idle-Aufbau");
-      if (s.has(121)) gruende.push(perks.includes(70) ? "Active nutzt ACT für sofort maximale Study-Boni" : "Active nutzt den hohen TS141-IP-Bonus; TS121 erreicht ×50 EP erst nach zehn kurzen Eternities, RGs musst du ohne r138 selbst kaufen");
+      if (s.has(121)) gruende.push("Active erlaubt mit TS131 50 % mehr kaufbare RGs; Passive verstärkt RGs um 40 %. PASS macht Passive deshalb nicht pauschal zum stärkeren EP-Push. " + (perks.includes(70) ? "ACT hält die Active-Boni maximal" : "TS121 erreicht ×50 EP nach zehn kurzen Eternities; r138 erlaubt automatische RGs, hält aber TS141 nicht maximal"));
       if (s.has(123)) gruende.push("Idle lässt TS123/143 mit der Laufzeit wachsen und eignet sich deshalb für den hier vorgesehenen längeren Aufbau");
       if (s.has(32) && schritt.gruppe === "ecUnlock" && ec === 4) gruende.push("TS32 multipliziert die Infinities pro Crunch und verkürzt genau die EC4-Freischalt-Farm");
       if (s.has(62)) gruende.push("TS62 macht Replicanti dreimal schneller");
@@ -1237,7 +1237,7 @@
       soGehts: [
         "Außerhalb der Challenge respecen, eternitieren, EP-Farm-Tree laden. Weitere Trees erst an ihrer TT-Marke verwenden.",
         ...text.soGehts.filter(t => /Studienpfad muss/.test(t)),
-        ...(text.soGehts.some(t => t.startsWith("Mit PASS")) ? ["Mit PASS den Passive-Tree verwenden; RGs automatisch kaufen lassen, sonst mit R."] : []),
+        ...(text.soGehts.some(t => t.startsWith("Mit PASS")) ? ["Mit PASS den Passive-Tree als Komfort-Fallback ohne r138 verwenden; RGs automatisch kaufen lassen, sonst mit R."] : []),
         ...(studies.includes(121) ? text.soGehts.filter(t => t.startsWith("Ab dem Baum mit TS121:")) : []),
         studies.includes(181) ? "Mit TS181: Crunch-Autobuyer aus, Dimboost/Galaxy unbeschränkt auf 0 s. Ohne TS181 nach vollen RGs crunchen. Eternity-Autobuyer für den EP-Push aus."
           : "Nach vollen Replicanti-Galaxien crunchen; für den EP-Push Eternity-Autobuyer aus.",

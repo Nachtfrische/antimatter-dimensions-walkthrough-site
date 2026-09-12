@@ -221,7 +221,7 @@
     if (!Array.isArray(schritt.baeume) && schritt.id === "naechstenEcLaufMachen") {
       const lauf = naechsterLauf();
       if (lauf) {
-        baeume = baumMarkup(`EP-Farm-Tree · ohne Challenge`, DATEN.planFarmTree(lauf, profil?.totalTT ?? 0, profil?.clears ?? [], profil?.perks ?? []))
+        baeume = baumMarkup(`EP-Farm-Tree · ohne Challenge`, DATEN.planFarmTree(lauf, profil?.totalTT ?? 0, profil?.clears ?? [], profil?.perks ?? [], profil?.achievementIds ?? []))
           + baumMarkup(`Run-Tree für ${lauf.run}`, lauf.importString);
       }
     } else if (!baeume && !schritt.eigeneRoute && schritt.id === "pelleBisEcs") {
@@ -405,7 +405,7 @@
         <article class="karte">
           <h3>${schuetze(lauf.run)}${erledigt ? " — erledigt" : ""}</h3>
           <p>Richtwert ${schuetze(lauf.readyTT)} Time Theorems. Freischaltbedingung: ${schuetze(lauf.unlock)}. Ziel im Lauf: ${schuetze(lauf.goal)}.</p>
-          ${baumMarkup("EP-Farm-Tree · für deinen TT-Bestand", DATEN.planFarmTree(lauf, profil?.totalTT ?? 0, clears, profil?.perks ?? []))}
+          ${baumMarkup("EP-Farm-Tree · für deinen TT-Bestand", DATEN.planFarmTree(lauf, profil?.totalTT ?? 0, clears, profil?.perks ?? [], profil?.achievementIds ?? []))}
           ${lauf.ec === 8 ? `<p>Start-Tree laden und EC8 starten. ${schuetze(lauf.tip)} Erst bei vollen Replicanti/RGs den restlichen Tree ohne Respec importieren.</p>` : ""}
           ${PLAN.runBaeumeFuer(lauf).map(baum => baumMarkup(baum.bezeichnung, baum.importString)).join("")}
         </article>`;
