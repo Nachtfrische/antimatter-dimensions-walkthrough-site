@@ -551,7 +551,7 @@
       }
       schritte.push({ ...laufSchritt, etappen: teil.schritte,
         baeume: teil.schritte.flatMap(s => s.baeume ?? []) });
-      if (hat(p.perks, 73)) break;
+      if (hat(p.perks, 73) && laufSchritt.werte.tier < 5) break;
       const lauf = DATEN.route.find(r => r.run === laufSchritt.werte.run);
       // This is an ordered route, not a simulated production forecast. Only
       // apply the completion and TT target the preceding steps explicitly ask for.
@@ -603,7 +603,8 @@
     return baeume;
   }
 
-  function runBaeumeFuer(lauf, tree = lauf.importString) {
+  function runBaeumeFuer(lauf, tree = null, perks = []) {
+    tree ??= DATEN.runImportForPerks(lauf, perks);
     return lauf.ec === 8 ? [
       { bezeichnung: `Start-Tree für ${lauf.run} · Replicanti zuerst`, importString: tree.split("|")[0].split(",").filter(id => Number(id) < 133).join(",") + "|8" },
       { bezeichnung: `Erst bei vollen Replicanti/RGs: restlicher Run-Tree für ${lauf.run}`, importString: tree },
@@ -663,9 +664,14 @@
     const aktuell = Math.max(0, Math.floor(p.totalTT ?? 0));
     /* Der TS62-Zusatz in den Routentipps gilt nur, solange EC5 offen ist.
        planRunTree entfernt TS62 genau dann; steht EC5x1, ist der Satz falsch. */
-    const tipText = (clears[4] ?? 0) > 0 || hat(p.perks, 57)
+    let tipText = (clears[4] ?? 0) > 0 || hat(p.perks, 57)
       ? String(lauf.tip).replace(/\s*Falls EC5x1 noch fehlt,[^.]*\./, "").trim()
       : lauf.tip;
+    if (lauf.ec === 11 && (p.realities ?? 0) > 0) tipText = tipText.replace(/Community-Zeit: [^.]*\./,
+      "Mit deinen Reality-Boni ist daraus keine verlässliche Laufdauer ableitbar.");
+    if (lauf.ec === 11 && p.currentChallenge?.eternity !== 11 && hat(p.perks, 31) && DATEN.runImportForPerks(lauf, p.perks).split("|")[0].split(",").includes("122")) {
+      tipText += " Mit PASS Passive verwenden: dreifache Replicanti-Geschwindigkeit und sofort ×1e50 IP statt Idle-Aufbau. Crunch-Autobuyer AUS (TS181), Replicanti-Galaxien automatisch kaufen lassen.";
+    }
     const werte = {
       run: lauf.run,
       ec: lauf.ec,
@@ -790,7 +796,8 @@
           fertigWenn: `EC12 zeigt mindestens ${lauf.tier}/5 Abschlüsse. Bei einem Fehlschlag nicht zur nächsten Stufe springen.`,
         },
       } : {}),
-      ...(hat(p.perks, 73) ? { hinweis: "ECB ist gekauft: Der Lauf kann mehrere Stufen abschließen. Spiel bis zum nächsten erreichbaren Ziel; danach den Save neu einlesen, damit übersprungene Stufen nicht nochmals geplant werden." } : {}),
+      ...(hat(p.perks, 73) && lauf.tier < 5 ? { hinweis: "ECB ist gekauft: Der Lauf kann mehrere Stufen abschließen. Spiel bis zum nächsten erreichbaren Ziel; danach den Save neu einlesen, damit übersprungene Stufen nicht nochmals geplant werden."
+        + (lauf.ec === 12 ? " Sobald EC12 5/5 erreicht ist: Dilation freischalten, Dilation-Boni aufbauen und danach außerhalb von Dilation EP für den nächsten Reality-Reset pushen. Das RM-Sparziel folgt diesem Aufbau." : "") } : {}),
     }));
     return {
       phase: "eternityChallenges",

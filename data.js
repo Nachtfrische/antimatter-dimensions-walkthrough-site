@@ -2148,9 +2148,14 @@ window.EC_GUIDE_DATA.planDilationTree = function planDilationTree(totalTT, clear
   return `${ids}|0`;
 };
 
+// EC11: Mit PASS den Replicanti-Aufbau statt des langen Idle-Aufbaus nutzen.
+// Die Active-Grundroute fuer x1 und andere Challenges bleiben unveraendert.
+window.EC_GUIDE_DATA.runImportForPerks = (run, perks = []) => run.ec === 11 && perks.includes(31)
+  ? run.importString.replace(/\b(123|133|143)\b/g, id => Number(id) - 1) : run.importString;
+
 window.EC_GUIDE_DATA.planRunTree = function planRunTree(run, totalTT, clears = [], perks = [], { unlock = false, defer133 = false, achievementIds = [] } = {}) {
   const data = window.EC_GUIDE_DATA;
-  const [studyText, node] = run.importString.split("|");
+  const [studyText, node] = data.runImportForPerks(run, perks).split("|");
   const studies = new Set(studyText.split(",").map(Number));
   if ((clears[4] ?? 0) < 1 && !perks.includes(57)) studies.delete(62);
 
