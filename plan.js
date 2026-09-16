@@ -965,10 +965,40 @@
     dilationTTgen: "TT-Erzeugung", dilationpow: "dilatierte AD-Potenz",
   };
 
+  // Basiswerte der frühen Vorschau, ohne spätere Glyph-Alteration.
+  // Formeln: secret-formula/reality/glyph-effects.js; TT pro Stunde, DT pro e10000 Replicanti.
+  function glyphAngebotEffekte(glyph) {
+    const l = Number(glyph.level);
+    const s = 1 + Number(glyph.rarity) / 40;
+    const f = (wert, stellen = 2) => wert.toLocaleString("de-DE", { maximumFractionDigits: stellen });
+    const mult = wert => `×${wert >= 1e6 ? wert.toExponential(2).replace(".", ",").replace("e+", "e") : f(wert)}`;
+    const adLog = l * s * 10 * Math.log10(l * s * 10);
+    const werte = {
+      powerpow: `+${f(0.015 + l ** 0.2 * s ** 0.4 / 75, 3)}`,
+      powermult: `×${f(10 ** (adLog % 1))}e${Math.floor(adLog)}`,
+      powerdimboost: mult(Math.sqrt(l * s)), powerbuy10: mult(1 + l * s / 12),
+      infinitypow: `+${f(0.007 + l ** 0.21 * s ** 0.4 / 75, 3)}`,
+      infinityrate: `+${f(l ** 0.2 * s ** 0.4 * 0.04)}`,
+      infinityIP: mult((l * (s + 1)) ** 6 * 10000), infinityinfmult: mult((l * s) ** 1.5 * 2),
+      replicationspeed: mult(l * s * 3), replicationpow: `+${f(0.1 + Math.sqrt(l) * s / 25)}`,
+      replicationdtgain: `+${f(3 * l ** 0.3 * s ** 0.65)} je e10.000 Replicanti`,
+      replicationglyphlevel: `+${f(Math.sqrt(l ** 0.25 * s ** 0.4) / 50, 3)}`,
+      timepow: `+${f(0.01 + l ** 0.32 * s ** 0.45 / 75, 3)}`,
+      timespeed: `×${f(1 + l ** 0.3 * s ** 0.65 / 20, 3)}`,
+      timeetermult: mult(((s + 3) * l) ** 0.9), timeEP: mult((l * s) ** 3 * 100),
+      dilationDT: mult((l * s) ** 1.5 * 2),
+      dilationgalaxyThreshold: `×${f(1 - l ** 0.17 * s ** 0.35 / 100, 3)}`,
+      dilationTTgen: `${f(Math.sqrt(l * s) * 0.36)} TT/h`,
+      dilationpow: `+${f(0.1 + l ** 0.7 * s ** 0.7 / 25)}`,
+    };
+    return (glyph.effects ?? []).map(id => `${GLYPH_EFFEKT[id] ?? id}${
+      l > 0 && Number.isFinite(s) && werte[id] ? ` ${werte[id]}` : ""}`);
+  }
+
   function glyphText(glyph, index) {
     if (!glyph) return "Time mit EP×, sonst Power mit AD-Potenz";
     const rarity = Number(glyph.rarity ?? 0).toLocaleString("de-DE", { maximumFractionDigits: 1 });
-    const effekte = (glyph.effects ?? []).map(effekt => GLYPH_EFFEKT[effekt] ?? effekt).join(" + ");
+    const effekte = glyphAngebotEffekte(glyph).join("; ");
     return `Angebot ${index + 1}: ${GLYPH_TYP[glyph.type] ?? glyph.type}, Level ${glyph.level} `
       + `(${rarity} %, ${effekte})`;
   }
@@ -3009,6 +3039,6 @@
 
   // ruName und perkName gehen mit hinaus, damit der Kontextblock in content.js
   // die sichtbaren Namen nicht ein zweites Mal fuehren muss.
-  window.AD_PLAN = { phaseVon, planeFuer, statusFuer, ruName, perkName, runBaeumeFuer,
+  window.AD_PLAN = { phaseVon, planeFuer, statusFuer, ruName, perkName, runBaeumeFuer, glyphText,
     ALLE_MEILENSTEINE: MEILENSTEINE, REIHENFOLGE };
 })();

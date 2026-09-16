@@ -26,6 +26,9 @@
     hinweisBlock: el("hinweis-block"),
     achievementBlock: el("achievement-block"),
     achievementListe: el("achievement-liste"),
+    glyphAuswahl: el("glyph-auswahl"),
+    glyphAuswahlHinweis: el("glyph-auswahl-hinweis"),
+    glyphAngebote: el("glyph-angebote"),
     schrittfolge: el("schrittfolge"),
     konzeptListe: el("konzept-liste"),
     konzeptLeer: el("konzept-leer"),
@@ -282,6 +285,12 @@
     setzePhasenfarbe(aktuellerPlan.phase);
     knoten.phasenTitel.textContent = phase?.titel ?? aktuellerPlan.phase;
     knoten.phasenEinleitung.textContent = PLAN.statusFuer(profil, aktuellerPlan.phase);
+
+    const glyphAuswahl = INHALT.glyphAuswahlFuer(profil);
+    knoten.glyphAuswahl.hidden = !glyphAuswahl;
+    knoten.glyphAuswahlHinweis.textContent = glyphAuswahl?.hinweis ?? "";
+    knoten.glyphAngebote.innerHTML = (glyphAuswahl?.angebote ?? [])
+      .map(text => `<li>${schuetze(text)}</li>`).join("");
 
     knoten.schrittfolge.innerHTML = aktuellerPlan.schritte
       .map((schritt, index) => schrittMarkup(schritt, index + 1)).join("");

@@ -379,6 +379,11 @@ p { margin: 0; }
 .hinweis::marker { color: var(--text-leise); }
 
 /* Achievement-Gelegenheiten bleiben sichtbar, ohne einen Planschritt zu belegen. */
+.glyph-auswahl { margin-bottom: 2rem; }
+.glyph-auswahl h3 { font-size: 1.1875rem; margin-bottom: 0.375rem; }
+.glyph-angebote { list-style: none; padding: 0; margin: 0.875rem 0 0; }
+.glyph-angebote li { border-top: 1px solid var(--linie); padding: 0.75rem 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
 .achievement-block { margin-bottom: 2rem; }
 .achievement-block > h3 { font-size: 1.1875rem; margin-bottom: 0.375rem; }
 .achievement-liste { list-style: none; padding: 0; margin: 0.875rem 0 0; }

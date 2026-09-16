@@ -1434,6 +1434,19 @@
     return JSON.stringify(daten, (_, wert) => typeof wert === "number" && !Number.isFinite(wert) ? null : wert, 2);
   }
 
+  function glyphAuswahlFuer(profil) {
+    if (!(profil.realities > 0)) return null;
+    const angebote = (profil.upcomingGlyphs ?? []).map((glyph, index) => window.AD_PLAN.glyphText(glyph, index));
+    const level = profil.pendingGlyphLevel;
+    return {
+      titel: "Glyph-Auswahl der nächsten Reality",
+      hinweis: angebote.length
+        ? `Projiziertes Level: ${level ?? profil.upcomingGlyphs[0].level}. Aus dem importierten Save berechnet; noch nicht im Inventar. Nach weiterem Push oder einem Reset den Save neu einlesen.`
+        : `${level != null ? `Projiziertes Level: ${level}. ` : ""}Die Angebote sind für diesen Save nicht berechenbar. Die Vorschau unterstützt frühe Realities mit START, vollständigen Rekord- und Zufallsdaten und ohne spätere Glyph-Boni. Prüfe „Potential Glyphs for this Reality“ im Spiel.`,
+      angebote,
+    };
+  }
+
   function kontextFuer(profil, plan, extras = {}) {
     if (!profil || !plan) return "";
     const { status = "", ruName = window.AD_PLAN?.ruName ?? (id => `Upgrade ${id}`),
@@ -1540,6 +1553,7 @@
     }).filter(Boolean);
 
     const offeneHinweise = (plan.hinweise ?? []).map(hinweis => `- ${hinweis.text}`);
+    const glyphAuswahl = glyphAuswahlFuer(profil);
 
     return [
       ...KONTEXT_KOPF,
@@ -1547,6 +1561,8 @@
       ...(importiertAm ? [`Save importiert am: ${importiertAm}`, ""] : []),
       "## Stand",
       ...zeilen,
+      ...(glyphAuswahl ? ["", `## ${glyphAuswahl.titel}`, glyphAuswahl.hinweis,
+        ...glyphAuswahl.angebote.map(text => `- ${text}`)] : []),
       "",
       "## Was mein Walkthrough als Nächstes vorschlägt",
       ...((plan.achievements ?? []).length ? ["", "Noch mitnehmen (Zeitpunkt beachten, eigene Läufe einzeln spielen):",
@@ -1569,5 +1585,5 @@
     ].join("\n");
   }
 
-  window.AD_INHALT = { SCHRITTE, PHASEN, textFuer, ecEtappeFuer, kontextFuer };
+  window.AD_INHALT = { SCHRITTE, PHASEN, textFuer, ecEtappeFuer, kontextFuer, glyphAuswahlFuer };
 })();
