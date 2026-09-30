@@ -217,7 +217,9 @@
     return {
       type,
       id: glyph.id ?? null,
+      index: glyph.idx == null ? null : safeInt(glyph.idx, 1_000),
       level: safeInt(glyph.level ?? glyph.rawLevel, 1_000_000_000),
+      rawLevel: glyph.rawLevel == null ? null : safeInt(glyph.rawLevel, 1_000_000_000),
       strength: Math.min(10, Math.max(0, finiteNumber(glyph.strength, 0))),
       rarity: Math.max(0, (finiteNumber(glyph.strength, 1) - 1) * 40),
       effects,
@@ -230,6 +232,34 @@
       hasRepGlyphLevel: type === "replication" && hasBit(effects, 11),
       hasPowerPow: type === "power" && hasBit(effects, 16),
     };
+  }
+
+  function alchemyProfile(ra) {
+    // Official alchemy resource IDs, unlock levels, and reagent IDs. Compound
+    // caps use reagent caps, not current amounts; 25,000 is only the hard cap.
+    const resources = [
+      ["power", 2], ["infinity", 3], ["time", 4], ["replication", 5], ["dilation", 6],
+      ["cardinality", 8, [2, 3]], ["eternity", 9, [2, 1]], ["dimensionality", 10, [0, 1]],
+      ["inflation", 11, [0, 4]], ["alternation", 12, [3, 4]], ["effarig", 7],
+      ["synergism", 13, [10, 3, 1]], ["momentum", 15, [10, 0, 2]],
+      ["decoherence", 14, [10, 9]], ["exponential", 18, [8, 11]],
+      ["force", 17, [7, 12]], ["uncountability", 19, [1, 10, 5]],
+      ["boundless", 20, [6, 8]], ["multiversal", 16, [9, 13]],
+      ["unpredictability", 21, [10, 13, 11]], ["reality", 25, [14, 15, 16, 17, 18, 19]],
+    ];
+    const caps = [];
+    return resources.map(([name, unlockedAt, reagents], id) => {
+      const baseCap = ra.highestRefinementValue?.[name];
+      const cap = reagents
+        ? (reagents.every(index => caps[index] != null) ? Math.min(...reagents.map(index => caps[index])) : null)
+        : (baseCap == null ? null : Math.min(25_000, decimalNumber(baseCap)));
+      caps[id] = cap;
+      return {
+        id, name, amount: decimalNumber(ra.alchemy?.[id]?.amount),
+        reaction: Boolean(ra.alchemy?.[id]?.reaction), cap,
+        unlocked: safeInt(ra.pets?.effarig?.level, 25) >= unlockedAt,
+      };
+    });
   }
 
   const EARLY_GLYPH_TYPES = ["power", "infinity", "replication", "time", "dilation"];
@@ -248,8 +278,13 @@
   /* Nachträglich vergebene Effekte. Sie gehören nicht in die Tabelle oben, weil
      earlyGlyphProjection daraus die Zufallsauswahl des Spiels nachbaut und dabei
      genau die generierbaren Effekte braucht. Für die Anzeige zählen sie mit:
-     timeshardpow (Bit 27) hängt Ra an Time-Glyphs an (glyph-effects.js). */
+     Ra-Nameless 25 ergänzt timespeed auf allen Basis-Glyphs und timeshardpow
+     auf Time-Glyphs (glyph-core.js, applyGamespeed). */
   const SPAETE_GLYPH_EFFEKTE = {
+    power: [[1, "timespeed"]],
+    infinity: [[1, "timespeed"]],
+    replication: [[1, "timespeed"]],
+    dilation: [[1, "timespeed"]],
     time: [[27, "timeshardpow"]],
   };
 
@@ -649,6 +684,8 @@
       powerUpgrades: safeInt(hole?.powerUpgrades, 1_000_000),
       durationUpgrades: safeInt(hole?.durationUpgrades, 1_000_000),
       activations: safeInt(hole?.activations, Number.MAX_SAFE_INTEGER),
+      active: Boolean(hole?.active),
+      phaseSeconds: finiteNumber(hole?.phase),
     })) : [];
     while (blackHoles.length < 2) blackHoles.push({
       id: blackHoles.length + 1,
@@ -657,6 +694,8 @@
       powerUpgrades: 0,
       durationUpgrades: 0,
       activations: 0,
+      active: false,
+      phaseSeconds: 0,
     });
     const firstBlackHoleUnlocked = blackHoles[0].unlocked;
     const points = automatorPoints(realities, realityUpgrades, perks, firstBlackHoleUnlocked);
@@ -716,7 +755,9 @@
       reality: realities + 1,
       realities,
       totalTT,
+      totalTTLog10: decimalLog10(timestudy.maxTheorem ?? totalTT),
       unspentTT: decimalNumber(timestudy.theorem),
+      unspentTTLog10: decimalLog10(timestudy.theorem),
       clears,
       studies: uniqueIds(timestudy.studies, 1, 999),
       achievementIds,
@@ -727,6 +768,37 @@
       perkPoints: safeInt(reality.perkPoints, Number.MAX_SAFE_INTEGER),
       activeGlyphs,
       inventoryGlyphs,
+      glyphProtectedSlots: 10 * safeInt(reality.glyphs?.protectedRows, 11),
+      glyphRespecIntoProtected: Boolean(save.options?.respecIntoProtected),
+      glyphSets: (Array.isArray(reality.glyphs?.sets) ? reality.glyphs.sets : [])
+        .slice(0, 7).map((set, index) => ({ slot: index + 1,
+          glyphs: (Array.isArray(set?.glyphs) ? set.glyphs : []).slice(0, 5).map(glyphSummary).filter(Boolean),
+        })).filter(set => set.glyphs.length),
+      glyphSetMatch: {
+        effects: save.options?.ignoreGlyphEffects ? "including" : "exact",
+        level: save.options?.ignoreGlyphLevel ? "increased" : "exact",
+        rarity: save.options?.ignoreGlyphRarity ? "increased" : "exact",
+      },
+      glyphFilter: {
+        select: ["lowest-sacrifice", "effect-count", "rarity-threshold", "specified-effects", "effect-score", "lowest-alchemy", "alchemy-value"]
+          [safeInt(reality.glyphs?.filter?.select, 6)],
+        reject: ["sacrifice", "refine", "refine-to-cap"][safeInt(reality.glyphs?.filter?.trash, 2)],
+        simple: finiteNumber(reality.glyphs?.filter?.simple),
+        types: Object.fromEntries([...EARLY_GLYPH_TYPES, "effarig"].map(type => {
+          const filter = reality.glyphs?.filter?.types?.[type];
+          return [type, { rarity: finiteNumber(filter?.rarity), score: finiteNumber(filter?.score),
+            effectCount: safeInt(filter?.effectCount, 7), specifiedMask: safeInt(filter?.specifiedMask, 2 ** 31 - 1),
+            specifiedEffects: glyphSummary({ type, effects: filter?.specifiedMask }).effectIds,
+            effectScores: (Array.isArray(filter?.effectScores) ? filter.effectScores : []).slice(0, 7).map(value => finiteNumber(value)),
+            effectScoresByEffect: Object.fromEntries((EARLY_GLYPH_EFFECTS[type] ?? [])
+              .map(([, id], index) => [id, finiteNumber(Array.isArray(filter?.effectScores)
+                ? filter.effectScores[index] : filter?.effectScores?.[id])])),
+          }];
+        })),
+      },
+      glyphLevelWeights: Object.fromEntries(["ep", "repl", "dt", "eternities"]
+        .map(key => [key, finiteNumber(effarig.glyphWeights?.[key], 25)])),
+      autoAdjustGlyphWeights: Boolean(effarig.autoAdjustGlyphWeights),
       glyphSacrificeLog10: Object.fromEntries([...EARLY_GLYPH_TYPES, "effarig", "reality"]
         .map(type => [type, decimalLog10(reality.glyphs?.sac?.[type]) ?? 0])),
       pendingGlyphLevel: glyphProjection.level,
@@ -752,6 +824,11 @@
       automatorUnlocked: Boolean(reality.automator?.forceUnlock) || points >= 100 || Object.keys(reality.automator?.scripts ?? {}).length > 0,
       automatorScriptCount: Object.keys(reality.automator?.scripts ?? {}).length,
       automatorMode: safeInt(reality.automator?.state?.mode, 10),
+      automatorModeName: ({ 1: "pause", 2: "run", 3: "single-step" })[safeInt(reality.automator?.state?.mode, 10)] ?? "unknown",
+      automatorOn: Array.isArray(reality.automator?.state?.stack) && reality.automator.state.stack.length > 0,
+      automatorRunning: safeInt(reality.automator?.state?.mode, 10) === 2
+        && Array.isArray(reality.automator?.state?.stack) && reality.automator.state.stack.length > 0,
+      automatorRepeat: Boolean(reality.automator?.state?.repeat),
       autoAchievementsEnabled: Boolean(reality.autoAchieve),
       gainedAutoAchievements: Boolean(reality.gainedAutoAchievements),
       // History is newest first. Placeholder runs must not count toward r111/r143.
@@ -765,8 +842,31 @@
       eternityAutobuyer: {
         enabled: Boolean(save.auto?.autobuyersOn && save.auto?.eternity?.isActive),
         mode: safeInt(save.auto?.eternity?.mode, 2),
+        modeName: ["amount", "time", "x-highest"][safeInt(save.auto?.eternity?.mode, 2)],
         amount: decimalNumber(save.auto?.eternity?.amount),
         dynamicAmount: Boolean(save.auto?.eternity?.increaseWithMult),
+      },
+      automation: {
+        enabled: Boolean(save.auto?.autobuyersOn),
+        autoEC: Boolean(reality.autoEC),
+        retryCelestial: Boolean(save.options?.retryCelestial),
+        reality: {
+          active: Boolean(save.auto?.reality?.isActive), mode: safeInt(save.auto?.reality?.mode, 5),
+          modeName: ["rm", "glyph-level", "rm-or-glyph-level", "rm-and-glyph-level", "time", "relic-shards"]
+            [safeInt(save.auto?.reality?.mode, 5)],
+          rmLog10: decimalLog10(save.auto?.reality?.rm), glyph: safeInt(save.auto?.reality?.glyph),
+          timeSeconds: finiteNumber(save.auto?.reality?.time), shard: finiteNumber(save.auto?.reality?.shard),
+        },
+        ...Object.fromEntries(["bigCrunch", "eternity"].map(name => [name, {
+          active: Boolean(save.auto?.[name]?.isActive), mode: safeInt(save.auto?.[name]?.mode, 2),
+          modeName: ["amount", "time", "x-highest"][safeInt(save.auto?.[name]?.mode, 2)],
+          amountLog10: decimalLog10(save.auto?.[name]?.amount), timeSeconds: finiteNumber(save.auto?.[name]?.time),
+          xHighestLog10: decimalLog10(save.auto?.[name]?.xHighest),
+          dynamicAmount: Boolean(save.auto?.[name]?.increaseWithMult),
+        }])),
+        late: Object.fromEntries(["darkMatterDims", "ascension", "annihilation", "singularity", "blackHolePower", "imaginaryUpgrades"]
+          .map(name => [name, Boolean(save.auto?.[name]?.isActive)])),
+        annihilationMultiplier: finiteNumber(save.auto?.annihilation?.multiplier),
       },
       requirementChecks: {
         onlyAD1: save.requirementChecks?.eternity?.onlyAD1 ?? null,
@@ -793,14 +893,20 @@
         infinityPoints: decimalNumber(save.infinityPoints),
         eternityPoints: decimalNumber(save.eternityPoints),
         infinities: decimalNumber(save.infinities),
+        infinitiesLog10: decimalLog10(save.infinities),
         bankedInfinities: decimalNumber(save.infinitiesBanked),
+        bankedInfinitiesLog10: decimalLog10(save.infinitiesBanked),
         eternities: decimalNumber(save.eternities),
+        eternitiesLog10: decimalLog10(save.eternities),
         tachyonParticles: decimalNumber(dilation.tachyonParticles),
+        tachyonParticlesLog10: decimalLog10(dilation.tachyonParticles),
+        timeShardsLog10: decimalLog10(save.timeShards),
         dilatedTime: decimalNumber(dilation.dilatedTime),
         dilatedTimeLog10: decimalLog10(dilation.dilatedTime),
         realityMachines: decimalNumber(reality.realityMachines),
         realityMachinesLog10: decimalLog10(reality.realityMachines),
         maxRealityMachines: decimalNumber(reality.maxRM),
+        maxRealityMachinesLog10: decimalLog10(reality.maxRM),
         imaginaryMachines: decimalNumber(reality.imaginaryMachines),
         imaginaryMachineCap: Math.min(Number.MAX_VALUE, decimalNumber(reality.iMCap)
           * (imaginaryUpgrades.includes(13) && !pelle.doomed
@@ -814,8 +920,13 @@
       // button remains authoritative; this is not a simulation of production.
       gainedRMIsEstimate: true,
       realityGameTimeMs: finiteNumber(save.records?.thisReality?.time),
+      realityRealTimeMs: finiteNumber(save.records?.thisReality?.realTime),
+      totalTimePlayedMs: finiteNumber(save.records?.totalTimePlayed),
       gameTimeSinceBlackHoleMs: Math.max(0, finiteNumber(save.records?.totalTimePlayed) - finiteNumber(save.records?.timePlayedAtBHUnlock)),
       blackHolePaused: Boolean(save.blackHolePause),
+      blackHoleAutoPauseMode: safeInt(save.blackHoleAutoPauseMode, 2),
+      blackHoleAutoPauseModeName: ["none", "before-bh1", "before-bh2"][safeInt(save.blackHoleAutoPauseMode, 2)],
+      blackHoleNegative: finiteNumber(save.blackHoleNegative, 1),
       currentRun: {
         // Prolong grants 100 Eternities without playing either reset. The
         // requirement flags describe actions in this Reality, unlike currency.
@@ -890,6 +1001,8 @@
           running: Boolean(teresa.run),
           bestRunAMExponent: decimalExponent(teresa.bestRunAM),
           bestRunAM: decimalNumber(teresa.bestRunAM),
+          perkShop: Array.from({ length: 5 }, (_, index) => safeInt(teresa.perkShop?.[index])),
+          lastRepeatedMachinesLog10: decimalLog10(teresa.lastRepeatedMachines),
         },
         effarig: {
           relicShards: decimalNumber(effarig.relicShards),
@@ -903,6 +1016,12 @@
           tesseracts: safeInt(enslaved.tesseracts, 10_000),
           storedRealTime: finiteNumber(enslaved.storedReal, 0),
           storedTimeExponent: decimalExponent(enslaved.stored),
+          storedTime: decimalNumber(enslaved.stored),
+          storedTimeLog10: decimalLog10(enslaved.stored),
+          isStoring: Boolean(enslaved.isStoring),
+          isStoringReal: Boolean(enslaved.isStoringReal),
+          autoStoreReal: Boolean(enslaved.autoStoreReal),
+          isAutoReleasing: Boolean(enslaved.isAutoReleasing),
           progress: bitIds(enslaved.progressBits, 0, 12),
         },
         v: {
@@ -910,6 +1029,10 @@
           running: Boolean(v.run),
           runUnlocks: vRunUnlocks,
           spaceTheorems,
+          spaceTheoremsSpent: finiteNumber(v.STSpent),
+          runRecords: Array.from({ length: 9 }, (_, index) => finiteNumber(v.runRecords?.[index])),
+          goalReductionSteps: Array.from({ length: 9 }, (_, index) => safeInt(v.goalReductionSteps?.[index])),
+          wantsFlipped: Boolean(v.wantsFlipped),
         },
         ra: {
           unlocks: bitIds(ra.unlockBits, 0, 30),
@@ -918,22 +1041,67 @@
             .map(name => [name, safeInt(ra.pets?.[name]?.level, 25)])),
           petUpgrades: Object.fromEntries(["teresa", "effarig", "enslaved", "v"]
             .map(name => [name, { chunks: safeInt(ra.pets?.[name]?.chunkUpgrades), memories: safeInt(ra.pets?.[name]?.memoryUpgrades) }])),
+          petResources: Object.fromEntries(["teresa", "effarig", "enslaved", "v"].map(name => {
+            const pet = ra.pets?.[name];
+            const level = safeInt(pet?.level, 25);
+            return [name, {
+              memories: decimalNumber(pet?.memories), memoryChunks: decimalNumber(pet?.memoryChunks),
+              nextLevelMemories: level === 0 || level >= 25 ? null
+                : Math.floor((level + level ** 2 / 10) ** 5.52 * 1.5 ** Math.max(0, level - 15) * 1e6),
+            }];
+          })),
+          remembrance: ({ Teresa: "teresa", Effarig: "effarig", "The Nameless Ones": "enslaved", V: "v" })[ra.petWithRemembrance] ?? null,
+          chargedInfinityUpgrades: (Array.isArray(ra.charged) ? ra.charged : [])
+            .filter(id => ["timeMult", "18Mult", "27Mult", "36Mult", "45Mult", "resetBoost", "dimMult", "galaxyBoost", "timeMult2", "unspentBonus", "resetMult", "passiveGen"].includes(id)),
+          dischargeOnReality: Boolean(ra.disCharge),
+          momentumTimeMs: finiteNumber(ra.momentumTime),
+          peakGamespeed: decimalNumber(ra.peakGamespeed),
+          alchemy: alchemyProfile(ra),
         },
         laitela: {
           running: Boolean(laitela.run),
           difficultyTier: safeInt(laitela.difficultyTier, 8),
           singularities: decimalNumber(laitela.singularities),
           maxDarkMatter: decimalNumber(laitela.maxDarkMatter),
+          darkMatterLog10: decimalLog10(laitela.darkMatter),
+          maxDarkMatterLog10: decimalLog10(laitela.maxDarkMatter),
+          darkEnergy: decimalNumber(laitela.darkEnergy),
+          darkMatterMult: decimalNumber(laitela.darkMatterMult),
+          entropy: finiteNumber(laitela.entropy),
+          thisCompletionSeconds: finiteNumber(laitela.thisCompletion),
+          fastestCompletionSeconds: finiteNumber(laitela.fastestCompletion),
+          singularityCapIncreases: safeInt(laitela.singularityCapIncreases),
+          dimensions: (Array.isArray(laitela.dimensions) ? laitela.dimensions : []).slice(0, 4).map(dimension => ({
+            amountLog10: decimalLog10(dimension?.amount), ascensionCount: safeInt(dimension?.ascensionCount),
+            intervalUpgrades: safeInt(dimension?.intervalUpgrades), powerDMUpgrades: safeInt(dimension?.powerDMUpgrades),
+            powerDEUpgrades: safeInt(dimension?.powerDEUpgrades),
+          })),
         },
         pelle: {
           doomed: Boolean(pelle.doomed),
           progress: bitIds(pelle.progressBits, 0, 30),
+          remnants: decimalNumber(pelle.remnants),
+          realityShardsLog10: decimalLog10(pelle.realityShards),
+          upgrades: uniqueIds(pelle.upgrades, 0, 30),
+          rebuyables: Object.fromEntries(["antimatterDimensionMult", "timeSpeedMult", "glyphLevels", "infConversion", "galaxyPower",
+            "galaxyGeneratorAdditive", "galaxyGeneratorMultiplicative", "galaxyGeneratorAntimatterMult", "galaxyGeneratorIPMult", "galaxyGeneratorEPMult"]
+            .map(name => [name, safeInt(pelle.rebuyables?.[name])])),
           galaxyGeneratorUnlocked: Boolean(pelle.galaxyGenerator?.unlocked),
           galaxyGeneratorPhase: safeInt(pelle.galaxyGenerator?.phase, 5),
+          galaxyGenerator: {
+            generatedGalaxies: decimalNumber(pelle.galaxyGenerator?.generatedGalaxies),
+            spentGalaxies: decimalNumber(pelle.galaxyGenerator?.spentGalaxies),
+            sacrificeActive: Boolean(pelle.galaxyGenerator?.sacrificeActive),
+          },
           rifts: Object.fromEntries(["vacuum", "decay", "chaos", "recursion", "paradox"]
             .map(name => [name, decimalNumber(pelle.rifts?.[name]?.fill)])),
           riftFillLog10: Object.fromEntries(["vacuum", "decay", "recursion", "paradox"]
             .map(name => [name, decimalLog10(pelle.rifts?.[name]?.fill) ?? 0])),
+          riftStates: Object.fromEntries(["vacuum", "decay", "chaos", "recursion", "paradox"]
+            .map(name => [name, { active: Boolean(pelle.rifts?.[name]?.active),
+              reducedTo: finiteNumber(pelle.rifts?.[name]?.reducedTo, 1),
+              percentageSpent: finiteNumber(pelle.rifts?.[name]?.percentageSpent),
+            }])),
         },
       },
       fullGameCompletions: safeInt(save.records?.fullGameCompletions, 1_000_000),

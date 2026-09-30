@@ -1379,9 +1379,18 @@
   const felderAus = (objekt, felder) => Object.fromEntries(felder.split(/\s+/)
     .filter(feld => feld && objekt?.[feld] !== undefined).map(feld => [feld, objekt[feld]]));
 
+  // One legend instead of repeating field names and derived flags for every Glyph.
+  const GLYPH_SPALTEN = ["id", "slot", "type", "level", "rawLevel", "rarity", "effects"];
+  const glyphZeilen = (glyphs, effektIds) => (glyphs ?? []).map(g => [g.id ?? null, g.index ?? null,
+    g.type, g.level, g.rawLevel ?? null, Number((g.rarity ?? 0).toFixed(3)),
+    (g.effectIds ?? []).map(id => effektIds.indexOf(id))]);
+
   function kontextDetails(p, phase) {
     const reihenfolge = window.AD_PLAN?.REIHENFOLGE ?? Object.keys(PHASEN);
-    const erreicht = name => reihenfolge.indexOf(name) <= reihenfolge.indexOf(phase);
+    // A plan for a current run must not hide already unlocked systems.
+    const rang = Math.max(reihenfolge.indexOf(phase),
+      reihenfolge.indexOf(window.AD_PLAN?.phaseVon(p)));
+    const erreicht = name => reihenfolge.indexOf(name) <= rang;
     const r = p.resources ?? {};
     const daten = {
       basis: felderAus(p, "platform version legacySave achievementIds dimensionBoosts galaxies eighthDimensionAmount eighthDimensionBought recentEternityEPLog10 recentInfinityIPLog10 peakEPGain eternityAutobuyer currentInfinitySeconds currentEternitySeconds replicantiLog10 replicantiRounded"),
@@ -1399,39 +1408,62 @@
         eternityUpgradeCount epMultUpgrades totalTickGained currentEternityRealSeconds currentRun`);
       daten.challenges = felderAus(p.currentChallenge, "normal infinity eternity eternityUnlocked requirementBits");
       Object.assign(daten.ressourcen, felderAus(r, `eternityPoints eternityPointsExponent maxEternityPointsExponent
-        eternities bankedInfinities maxReplicantiExponent`));
+        eternities bankedInfinities maxReplicantiExponent infinitiesLog10 bankedInfinitiesLog10 eternitiesLog10 timeShardsLog10`));
+      Object.assign(daten.eternity, felderAus(p, "totalTTLog10 unspentTTLog10"));
     }
     if (erreicht("dilation")) {
       daten.dilation = felderAus(p, `dilationUnlocked dilationActive dilationStudies dilationUpgrades dilationRebuyables
         recentDilationCompletions realityStudyBought realityAvailable`);
-      Object.assign(daten.ressourcen, felderAus(r, "tachyonParticles dilatedTime dilatedTimeLog10 maxDilatedTimeExponent"));
+      Object.assign(daten.ressourcen, felderAus(r, "tachyonParticles tachyonParticlesLog10 dilatedTime dilatedTimeLog10 maxDilatedTimeExponent"));
     }
     if (erreicht("reality")) {
       daten.reality = felderAus(p, `reality realities realityUpgrades realityUpgradeUnlocks realityRequirementLocks
-        realityRebuyables perks perkPoints autoAchievementsEnabled gainedAutoAchievements realityGameTimeMs currentRun`);
-      daten.bedingungen = felderAus(p.requirementChecks, "noEternities noInfinities noRG noAD8 maxGlyphs slowestBlackHole");
-      daten.glyphs = felderAus(p, `activeGlyphs inventoryGlyphs glyphRespecEnabled glyphSacrificeLog10 bestGlyphLevel bestGlyphRarity`);
-      daten.prognosen = felderAus(p, "gainedRMEstimate gainedRMIsEstimate pendingGlyphLevel upcomingGlyphs");
-      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorMode");
-      daten.blackHoles = felderAus(p, "blackHoles blackHolePaused gameTimeSinceBlackHoleMs");
-      Object.assign(daten.ressourcen, felderAus(r, "realityMachines realityMachinesLog10 maxRealityMachines"));
+        realityRebuyables perks perkPoints autoAchievementsEnabled gainedAutoAchievements realityGameTimeMs realityRealTimeMs totalTimePlayedMs currentRun`);
+      daten.bedingungen = felderAus(p.requirementChecks, "onlyAD1 onlyAD8 noAD1 noAM noPurchasedTT noEternities noInfinities noRG noAD8 maxGlyphs slowestBlackHole");
+      const effektIds = [...new Set([...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? []),
+        ...(p.glyphSets ?? []).flatMap(set => set.glyphs ?? [])].flatMap(g => g.effectIds ?? []))];
+      daten.glyphs = { columns: GLYPH_SPALTEN, effectIds: effektIds,
+        activeGlyphs: glyphZeilen(p.activeGlyphs, effektIds), inventoryGlyphs: glyphZeilen(p.inventoryGlyphs, effektIds),
+        ...felderAus(p, `glyphRespecEnabled glyphSacrificeLog10 bestGlyphLevel bestGlyphRarity
+          glyphProtectedSlots glyphRespecIntoProtected glyphSetMatch glyphFilter glyphLevelWeights autoAdjustGlyphWeights`),
+        glyphSets: (p.glyphSets ?? []).map(set => ({ slot: set.slot, glyphs: glyphZeilen(set.glyphs, effektIds) })) };
+      if (p.glyphFilter) daten.glyphs.glyphFilter = { ...p.glyphFilter,
+        types: Object.fromEntries(Object.entries(p.glyphFilter.types ?? {}).map(([type, filter]) => [type,
+          felderAus(filter, "rarity score effectCount specifiedEffects effectScoresByEffect")])) };
+      daten.prognosen = felderAus(p, erreicht("teresa")
+        ? "pendingGlyphLevel" : "gainedRMEstimate gainedRMIsEstimate pendingGlyphLevel");
+      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorModeName automatorOn automatorRunning automatorRepeat");
+      Object.assign(daten.automation, p.automation ?? {});
+      daten.blackHoles = felderAus(p, "blackHoles blackHolePaused blackHoleAutoPauseModeName blackHoleNegative gameTimeSinceBlackHoleMs");
+      Object.assign(daten.ressourcen, felderAus(r, "realityMachines realityMachinesLog10 maxRealityMachines maxRealityMachinesLog10"));
     }
     if (erreicht("teresa")) {
       daten.celestials = { current: p.celestials?.current ?? null };
       for (const name of ["teresa", "effarig", "enslaved", "v", "ra", "laitela", "pelle"]) {
-        if (erreicht(name) && p.celestials?.[name]) daten.celestials[name] = p.celestials[name];
+        if (erreicht(name) && p.celestials?.[name]) {
+          daten.celestials[name] = { ...p.celestials[name] };
+          if (name === "ra") delete daten.celestials.ra.alchemy;
+        }
       }
     }
-    if (erreicht("ra")) daten.alchemy = felderAus(p, "alchemyAtCapCount");
+    if (erreicht("ra")) daten.alchemy = { globalCap: 25000,
+      ...felderAus(p, "alchemyAtCapCount"),
+      columns: ["name", "amount", "cap", "reaction", "unlocked"],
+      resources: (p.celestials?.ra?.alchemy ?? []).map(a => [a.name, a.amount, a.cap, a.reaction, a.unlocked]) };
     if (erreicht("imaginaryMachines")) {
       daten.imaginary = felderAus(p, "imaginaryUpgrades imaginaryUpgradeUnlocks imaginaryRequirementLocks imaginaryRebuyables continuumDisabled");
       Object.assign(daten.bedingungen, felderAus(p.requirementChecks, "noContinuum"));
       Object.assign(daten.ressourcen, felderAus(r, "imaginaryMachines imaginaryMachineCap"));
     }
     if (erreicht("complete")) daten.abschluss = felderAus(p, "isGameEnd fullGameCompletions");
-    // Nicht-endliche Exponenten sind fehlende/Null-Ressourcen, kein JSON-null
-    // ohne Erklärung. Endliche Log10-Werte bleiben ohne Rundung erhalten.
-    return JSON.stringify(daten, (_, wert) => typeof wert === "number" && !Number.isFinite(wert) ? null : wert, 2);
+    // A finite log is authoritative when a native number saturated. Do not
+    // serialize 309-digit capped balances beside the useful logarithm.
+    for (const [key, value] of Object.entries(daten.ressourcen)) {
+      if (value === Number.MAX_VALUE && (`${key}Log10` in daten.ressourcen || `${key}Exponent` in daten.ressourcen)) {
+        delete daten.ressourcen[key];
+      }
+    }
+    return JSON.stringify(daten, (_, wert) => typeof wert === "number" && !Number.isFinite(wert) ? null : wert);
   }
 
   function glyphAuswahlFuer(profil) {
@@ -1447,17 +1479,48 @@
     };
   }
 
+  function fortgeschritteneHinweise(p) {
+    const c = p.celestials ?? {};
+    const ra = c.ra ?? {};
+    const pets = ra.pets ?? {};
+    if (!ra.running && !Object.values(pets).some(level => level > 1)) return [];
+    const hinweise = [
+      "Ra: neue Chunks nur in Ra; Echtzeit-Speichern stoppt neue Chunks, Memories laufen weiter. Chunk-Quellen Teresa/Effarig/Nameless/V: EP/Relic-Shard-Gewinn/Time Shards/Infinity Power. Remembrance: gewähltes Pet ×5 Chunks, andere ×0,5.",
+      "Glyph-Zeilen enthalten gespeicherte Werte und Effekt-IDs, keine vollständige Berechnung aller späten Boni. Presets sind Suchmuster, keine zusätzlichen Inventar-Glyphen; Glyph-slot nullbasiert, Preset-slot ab 1. Sets aus dem Plan sind Empfehlungen, kein gemessenes Optimum. Nameless-Zeitspeicher: Millisekunden (auch storedTimeLog10).",
+    ];
+    if ((pets.effarig ?? 0) >= 2) hinweise.push(
+      "Alchemie: cap ist die derzeitige Kappe, globalCap das Endmaximum. Basis-Kappen stammen aus dem besten bisherigen Refinement je Typ, zusammengesetzte aus der kleinsten Zutaten-Kappe. Bessere Glyphen erhöhen Kappen; Reaktionen laufen pro Reality, nicht pro Sekunde. Echtzeit-Verstärkung vervielfacht sie nicht.");
+    if ((pets.effarig ?? 0) >= 8) hinweise.push(
+      "Alchemie-Farm: Glyph-Filter und Verwertung zusammen prüfen (Lowest Alchemy Resource + Refinement), Reaktionen einschalten; wertvolle Set-Glyphen vorher schützen. Ein aktuelles Cap unter 25.000 ist kein Defekt.");
+    if ((pets.effarig ?? 0) >= 25) hinweise.push(
+      "Reality-Glyph: Effekte ab Level 0/9.000/15.000/25.000; Herstellung leert die Reality-Alchemieressource. Danach wieder auffüllen. Momentum wächst mit realer Zeit; zusätzliche schnelle Resets ersetzen diese Wartezeit nicht.");
+    const meilensteine = [];
+    if ((pets.enslaved ?? 0) >= 15 && pets.enslaved < 25) meilensteine.push("Nameless25: Game-Speed-Effekt auf allen Basisglyphen + weiterer Time-Effekt");
+    if ((pets.v ?? 0) >= 18 && pets.v < 24) meilensteine.push("V24: vierte Triad Study");
+    if ((pets.v ?? 0) >= 18 && pets.v < 25) meilensteine.push("V25: Achievement-Multiplikator ^1,5");
+    if (meilensteine.length) hinweise.push(`Offene späte Ra-Meilensteine: ${meilensteine.join("; ")}.`);
+    if ((pets.teresa ?? 0) >= 25 && c.current) hinweise.push(
+      "Celestial-Run: Teresas Level-25-Startbonus für TP gilt hier nicht. Automator muss nötige Dilation weiterhin ausführen (TP ≤ 10); vor einem vorgeschlagenen Reset das aktuelle Run-Ziel und retryCelestial prüfen.");
+    if ((p.resources?.imaginaryMachineCap ?? 0) > 0) hinweise.push(
+      "iM werden passiv bis zum gespeicherten Cap erzeugt. Liegt es unter den nächsten Kosten, hilft Warten allein nicht: Cap durch RM-Push/Upgrades erhöhen. Gekaufte Upgrades, erfüllte Anforderungen und Requirement Locks sind getrennt aufgeführt.");
+    return hinweise;
+  }
+
   function kontextFuer(profil, plan, extras = {}) {
     if (!profil || !plan) return "";
     const { status = "", ruName = window.AD_PLAN?.ruName ?? (id => `Upgrade ${id}`),
       perkName = window.AD_PLAN?.perkName ?? (id => `Perk ${id}`), importiertAm = null } = extras;
     const r = profil.resources ?? {};
+    const reihenfolge = window.AD_PLAN?.REIHENFOLGE ?? Object.keys(PHASEN);
+    const spaet = Math.max(reihenfolge.indexOf(plan.phase),
+      reihenfolge.indexOf(window.AD_PLAN?.phaseVon(profil))) >= reihenfolge.indexOf("teresa");
     const zeilen = [];
     const zeile = (name, wert) => {
       if (wert === null || wert === undefined || wert === "" || wert === false) return;
       zeilen.push(`${name}: ${wert}`);
     };
-    const zahl = wert => Number(wert ?? 0).toLocaleString("de-DE", { maximumFractionDigits: 0 });
+    const zahl = wert => Number(wert ?? 0) >= 1e12 ? Number(wert).toExponential(3).replace("e+", "e")
+      : Number(wert ?? 0).toLocaleString("de-DE", { maximumFractionDigits: 0 });
     const exp = wert => (Number.isFinite(wert) && wert > 0 ? `e${Math.floor(wert)}` : null);
     const liste = werte => (werte?.length ? werte.join(", ") : null);
     const gross = wort => String(wort ?? "").charAt(0).toUpperCase() + String(wort ?? "").slice(1);
@@ -1467,7 +1530,7 @@
     if ((profil.realities ?? 0) > 0) {
       zeile("Reality", `${profil.reality} (${zahl(profil.realities)} abgeschlossen)`);
     }
-    if ((profil.totalTT ?? 0) > 0) {
+    if (!spaet && (profil.totalTT ?? 0) > 0) {
       zeile("Time Theorems", `${zahl(profil.totalTT)} insgesamt, ${zahl(profil.unspentTT)} frei`);
     }
     zeile("Antimatter", exp(r.antimatterExponent));
@@ -1475,11 +1538,11 @@
     if (exp(r.maxEternityPointsExponent)) {
       zeile("Eternity Points", `${exp(r.eternityPointsExponent) ?? "e0"} (Rekord dieser Reality ${exp(r.maxEternityPointsExponent)})`);
     }
-    if ((r.infinities ?? 0) > 0) zeile("Infinities", zahl(r.infinities));
-    if ((r.eternities ?? 0) > 0) zeile("Eternities", zahl(r.eternities));
+    if (!spaet && (r.infinities ?? 0) > 0) zeile("Infinities", zahl(r.infinities));
+    if (!spaet && (r.eternities ?? 0) > 0) zeile("Eternities", zahl(r.eternities));
     zeile("Dimension Boosts / Galaxien", profil.galaxies > 0 || profil.dimensionBoosts > 0
       ? `${zahl(profil.dimensionBoosts)} / ${zahl(profil.galaxies)}` : null);
-    if (profil.infinityUnlocked) {
+    if (!spaet && profil.infinityUnlocked) {
       zeile("Break Infinity", profil.breakInfinity ? "aktiv" : "noch nicht aktiviert");
       zeile("Normal Challenges", `${profil.normalChallenges?.length ?? 0}/12`);
       zeile("Infinity Challenges", `${profil.infinityChallenges?.length ?? 0}/8`);
@@ -1493,7 +1556,8 @@
       profil.currentChallenge?.eternity ? `EC${profil.currentChallenge.eternity}` : null,
     ].filter(Boolean);
     zeile("Laufende Challenge", liste(laufend) ?? "keine");
-    if (profil.eternityUnlocked) {
+    if (spaet) zeile("Aktiver Celestial-Run", profil.celestials?.current ?? "keiner");
+    if (!spaet && profil.eternityUnlocked) {
       zeile("Time Dimensions", `${profil.timeDimensionsUnlocked ?? 0}/8`);
       const clears = profil.clears ?? [];
       if (clears.some(wert => wert > 0)) {
@@ -1507,28 +1571,34 @@
     if (profil.dilationUnlocked) {
       zeile("Dilation", `${profil.dilationActive ? "läuft gerade" : "freigeschaltet, gerade nicht aktiv"}; Studies ${liste(profil.dilationStudies) ?? "keine"}`);
       if (profil.dilationActive) zeile("Aktueller Dilation-Lauf", `${Math.floor(profil.currentEternityRealSeconds ?? 0)} reale Sekunden beim Speichern; keine Restzeit-Prognose`);
-      zeile("Tachyon Particles / Dilated Time", `${zahl(r.tachyonParticles)} / ${exp(r.dilatedTimeLog10) ?? zahl(r.dilatedTime)}`);
-      zeile("Dilation-Upgrades", liste(profil.dilationUpgrades));
+      zeile("Tachyon Particles / Dilated Time", `${exp(r.tachyonParticlesLog10) ?? zahl(r.tachyonParticles)} / ${exp(r.dilatedTimeLog10) ?? zahl(r.dilatedTime)}`);
+      if (!spaet) zeile("Dilation-Upgrades", liste(profil.dilationUpgrades));
     }
     if ((profil.realities ?? 0) > 0) {
-      zeile("Reality Machines", `${r.realityMachinesLog10 > 308 ? exp(r.realityMachinesLog10) : zahl(r.realityMachines)} auf Lager, ${profil.gainedRMIsEstimate ? "Basis-Schätzung" : "ausgelesener Gewinn"} ${zahl(profil.gainedRMEstimate)} beim nächsten Reset`);
-      zeile("Perk-Punkte", zahl(profil.perkPoints));
-      zeile("Gekaufte Perks", liste((profil.perks ?? []).map(perkName)) ?? "keine");
+      zeile("Reality Machines", `${r.realityMachinesLog10 > 308 ? exp(r.realityMachinesLog10) : zahl(r.realityMachines)} auf Lager`
+        + (spaet ? "; nächster RM-Gewinn hier nicht zuverlässig berechenbar (Spielanzeige maßgeblich)"
+          : `, ${profil.gainedRMIsEstimate ? "Basis-Schätzung" : "ausgelesener Gewinn"} ${zahl(profil.gainedRMEstimate)} beim nächsten Reset`));
+      if (!spaet) {
+        zeile("Perk-Punkte", zahl(profil.perkPoints));
+        zeile("Gekaufte Perks", liste((profil.perks ?? []).map(perkName)) ?? "keine");
+      }
       const offeneRu = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
         .filter(id => !(profil.realityUpgrades ?? []).includes(id));
       const gekauft = (profil.realityUpgrades ?? []).filter(id => id >= 6);
       zeile("Reality-Upgrades", `${gekauft.length}/20 einmalige Upgrades gekauft`);
-      zeile("Bereits gekaufte Reality-Upgrades", liste(gekauft.map(ruName)) ?? "keine");
-      zeile("Bedingung erfüllt, noch nicht gekauft", liste((profil.realityUpgradeUnlocks ?? [])
-        .filter(id => id >= 6 && !gekauft.includes(id)).map(ruName)) ?? "keine");
-      zeile("Aktive Requirement Locks (kein Kauf)", liste((profil.realityRequirementLocks ?? []).map(ruName)) ?? "keine");
-      zeile("Noch nicht gekaufte Reality-Upgrades (keine Kaufreihenfolge)", liste(offeneRu.map(ruName)) ?? "keine");
+      if (!spaet || offeneRu.length) {
+        zeile("Bereits gekaufte Reality-Upgrades", liste(gekauft.map(ruName)) ?? "keine");
+        zeile("Bedingung erfüllt, noch nicht gekauft", liste((profil.realityUpgradeUnlocks ?? [])
+          .filter(id => id >= 6 && !gekauft.includes(id)).map(ruName)) ?? "keine");
+        zeile("Aktive Requirement Locks (kein Kauf)", liste((profil.realityRequirementLocks ?? []).map(ruName)) ?? "keine");
+        zeile("Noch nicht gekaufte Reality-Upgrades (keine Kaufreihenfolge)", liste(offeneRu.map(ruName)) ?? "keine");
+      }
       const glyphen = (profil.activeGlyphs ?? []).filter(glyph => glyph.type !== "companion");
-      if (glyphen.length) {
+      if (!spaet && glyphen.length) {
         zeile("Ausgerüstete Glyphs", glyphen
           .map(glyph => `${gross(glyph.type)} Level ${glyph.level} (${(glyph.effectIds ?? []).join(" + ") || "kein Effekt"})`)
           .join("; "));
-      } else zeile("Ausgerüstete Glyphs", "keine spielwirksamen Glyphs");
+      } else if (!glyphen.length) zeile("Ausgerüstete Glyphs", "keine spielwirksamen Glyphs");
       zeile("Glyph-Inventar", `${profil.inventoryGlyphs?.length ?? 0} Glyphs; alle Einzelwerte im Diagnoseblock`);
     }
     if (profil.imaginaryUpgrades?.length || (r.imaginaryMachines ?? 0) > 0) {
@@ -1554,6 +1624,7 @@
 
     const offeneHinweise = (plan.hinweise ?? []).map(hinweis => `- ${hinweis.text}`);
     const glyphAuswahl = glyphAuswahlFuer(profil);
+    const advancedHints = fortgeschritteneHinweise(profil);
 
     return [
       ...KONTEXT_KOPF,
@@ -1561,8 +1632,10 @@
       ...(importiertAm ? [`Save importiert am: ${importiertAm}`, ""] : []),
       "## Stand",
       ...zeilen,
-      ...(glyphAuswahl ? ["", `## ${glyphAuswahl.titel}`, glyphAuswahl.hinweis,
+      ...(glyphAuswahl ? ["", `## ${glyphAuswahl.titel}`,
+        spaet && !glyphAuswahl.angebote.length ? "Späte Glyph-Angebote sind für diesen Save nicht berechenbar; bei Bedarf die Auswahl im Spiel ergänzen." : glyphAuswahl.hinweis,
         ...glyphAuswahl.angebote.map(text => `- ${text}`)] : []),
+      ...(advancedHints.length ? ["", "## Fortgeschrittene Hinweise", ...advancedHints.map(h => `- ${h}`)] : []),
       "",
       "## Was mein Walkthrough als Nächstes vorschlägt",
       ...((plan.achievements ?? []).length ? ["", "Noch mitnehmen (Zeitpunkt beachten, eigene Läufe einzeln spielen):",
@@ -1574,8 +1647,8 @@
       ...(offeneHinweise.length ? ["", "## In dieser Reality nicht mehr erreichbar", ...offeneHinweise] : []),
       "",
       "## Weitere Spielstanddetails",
-      "Exponent/Log10: Basis 10; große Zahlen können gekappt sein. Fehlende Werte sind unbekannt; bei Altsaves sind Standardwerte möglich.",
-      ...((profil.realities ?? 0) > 0 ? ["currentRun zählt gespielte Resets, keine geschenkten Eternities. RM-/Glyph-Prognosen sind berechnet, nicht garantiert."] : []),
+      "Exponent/Log10: Basis 10; Log10 hat bei gekappten Zahlen Vorrang. Fehlend/null = unbekannt bzw. keine positive Ressource; Altsaves können Standardwerte enthalten.",
+      ...((profil.realities ?? 0) > 0 ? ["currentRun zählt gespielte Resets, keine geschenkten Eternities. RM-/Glyph-Prognosen sind berechnet, nicht garantiert. Glyph-Zeilen folgen columns; effects enthält nullbasierte Indizes in glyphs.effectIds (auch Presets). Seltenheit auf 0,001 Prozentpunkte gerundet; sonstige Zahlen unverändert."] : []),
       "```json",
       kontextDetails(profil, plan.phase),
       "```",
