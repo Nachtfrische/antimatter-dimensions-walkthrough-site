@@ -1405,7 +1405,7 @@
     }
     if (erreicht("earlyEternity")) {
       daten.eternity = felderAus(p, `eternityUnlocked totalTT unspentTT studies clears timeDimensionsUnlocked
-        eternityUpgradeCount epMultUpgrades totalTickGained currentEternityRealSeconds currentRun`);
+        eternityUpgradeCount eternityUpgrades epMultUpgrades totalTickGained currentEternityRealSeconds currentRun`);
       daten.challenges = felderAus(p.currentChallenge, "normal infinity eternity eternityUnlocked requirementBits");
       Object.assign(daten.ressourcen, felderAus(r, `eternityPoints eternityPointsExponent maxEternityPointsExponent
         eternities bankedInfinities maxReplicantiExponent infinitiesLog10 bankedInfinitiesLog10 eternitiesLog10 timeShardsLog10`));
@@ -1432,7 +1432,7 @@
           felderAus(filter, "rarity score effectCount specifiedEffects effectScoresByEffect")])) };
       daten.prognosen = felderAus(p, erreicht("teresa")
         ? "pendingGlyphLevel" : "gainedRMEstimate gainedRMIsEstimate pendingGlyphLevel");
-      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorModeName automatorOn automatorRunning automatorRepeat");
+      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorModeName automatorOn automatorRunning automatorRepeat automatorForceRestart");
       Object.assign(daten.automation, p.automation ?? {});
       daten.blackHoles = felderAus(p, "blackHoles blackHolePaused blackHoleAutoPauseModeName blackHoleNegative gameTimeSinceBlackHoleMs");
       Object.assign(daten.ressourcen, felderAus(r, "realityMachines realityMachinesLog10 maxRealityMachines maxRealityMachinesLog10"));
@@ -1467,7 +1467,7 @@
   }
 
   function glyphAuswahlFuer(profil) {
-    if (!(profil.realities > 0)) return null;
+    if (!(profil.realities > 0) || profil.celestials?.pelle?.doomed) return null;
     const angebote = (profil.upcomingGlyphs ?? []).map((glyph, index) => window.AD_PLAN.glyphText(glyph, index));
     const level = profil.pendingGlyphLevel;
     return {
@@ -1481,6 +1481,12 @@
 
   function fortgeschritteneHinweise(p) {
     const c = p.celestials ?? {};
+    if (c.pelle?.doomed) return [
+      "Pelle: Strikes bleiben nach Armageddon bestehen. Rift-Füllschalter steuern nur den Ressourcenverbrauch; freigeschaltete Boni wirken auch bei Idle. Höchstens zwei Rifts können gleichzeitig füllen und verbrauchen dabei 3 % ihrer Ressource pro Echtzeitsekunde.",
+      "Rift-Prozente berücksichtigen bereits verbrauchte Decay-Füllung und Generator-Abzüge (reducedTo). Ab 9 % Chaos bleiben Decays Effekt und alle drei Meilensteine aktiv, auch bei niedrigem Decay-Balken. Freigeschaltet bedeutet nicht zwingend stärker: Recursions Dimboost-Bonus ist bei 0 EC-Abschlüssen noch ×1.",
+      "Glyph-Zeilen zeigen Inventarwerte. In Pelle gelten das gesonderte Level-Limit und 0 % Seltenheit; Glyph-Sacrifice und Alchemie wirken nicht. Der besondere Effekt des einzelnen Glyphs wird erst ab 15 % Chaos freigeschaltet. Die daraus berechneten aktuellen Werte stehen unter pelle.glyphStatus. Deaktivierte Studies und Systeme sind gesondert aufgeführt; EU4 ist kaufbar, sein Achievement-Bonus bleibt in Pelle jedoch ×1.",
+      "Automation: active ist der gespeicherte Schalter, enabled berücksichtigt zusätzlich Hauptschalter, Freischaltung und Sperren; es ist keine Vorhersage des nächsten Kaufs. Zeitgrenzen der Autobuyer sind reale Sekunden. Automator-Modus und laufender Stack werden getrennt erfasst; Skriptinhalte werden nicht exportiert. Auto-EC, Black Holes und Continuum sind in Pelle deaktiviert, auch wenn gespeicherte Schalter noch an sind.",
+    ];
     const ra = c.ra ?? {};
     const pets = ra.pets ?? {};
     if (!ra.running && !Object.values(pets).some(level => level > 1)) return [];
@@ -1557,6 +1563,27 @@
     ].filter(Boolean);
     zeile("Laufende Challenge", liste(laufend) ?? "keine");
     if (spaet) zeile("Aktiver Celestial-Run", profil.celestials?.current ?? "keiner");
+    const pelle = profil.celestials?.pelle;
+    if (pelle?.doomed) {
+      zeile("Pelle-Strikes", (pelle.strikes ?? []).map(s => `${s.id}: ${s.requirement}`).join("; ") || liste(pelle.progress));
+      for (const rift of Object.values(pelle.riftEffects ?? {})) {
+        if (!rift.unlocked) continue;
+        const meilensteine = rift.milestones.filter(m => m.unlocked).map(m => `${m.threshold} %`).join(", ");
+        zeile(rift.name, `${rift.percentage.toLocaleString("de-DE", { maximumFractionDigits: 3 })} % · ${rift.filling ? "füllt" : "Idle"}`
+          + ` · aktive Meilensteine: ${meilensteine || "keine"}`);
+      }
+      const a = profil.automation ?? {};
+      const reset = (name, buyer) => {
+        if (!buyer) return;
+        const eingestellt = buyer.modeName === "time" ? `${buyer.timeSeconds} reale Sekunden`
+          : buyer.modeName === "x-highest" ? `×10^${buyer.xHighestLog10} des höchsten Gewinns`
+          : buyer.modeName === "amount" ? `10^${buyer.amountLog10}` : buyer.modeName;
+        zeile(name, `${buyer.enabled ?? (a.enabled && buyer.active) ? "an" : "aus/gesperrt"}; ${eingestellt}`);
+      };
+      reset("Auto-Eternity", a.eternity);
+      reset("Auto-Crunch", a.bigCrunch);
+      zeile("Automator", `${profil.automatorRunning ? "läuft" : "läuft nicht"}; Modus ${profil.automatorModeName ?? "unbekannt"}; ${profil.automatorScriptCount ?? 0} gespeicherte Skripte`);
+    }
     if (!spaet && profil.eternityUnlocked) {
       zeile("Time Dimensions", `${profil.timeDimensionsUnlocked ?? 0}/8`);
       const clears = profil.clears ?? [];

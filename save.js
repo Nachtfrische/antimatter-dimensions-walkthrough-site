@@ -636,6 +636,118 @@
     return save;
   }
 
+  // Pelle Rift percentages are not the raw fill, and inactive means only that
+  // the Rift is not draining. Formulas: core/celestials/pelle/rifts.js and
+  // core/secret-formula/celestials/rifts.js in the game source.
+  function pelleEffectProfile(save, pelle, clears, activeGlyphs) {
+    const progress = bitIds(pelle.progressBits, 1, 5);
+    const keys = ["vacuum", "decay", "chaos", "recursion", "paradox"];
+    const names = ["Vacuum / Hollow / Void", "Decay / Collapse / Disarray", "Chaos / Disorder / Impurity",
+      "Recursion / Dispersion / Destruction", "Paradox / Contradiction / Fallacy"];
+    const logPlusOne = value => {
+      const log = decimalLog10(value);
+      return log === null ? 0 : log > 15 ? log : Math.log10(1 + 10 ** log);
+    };
+    const fillLogs = Object.fromEntries(keys.map(key => [key, logPlusOne(pelle.rifts?.[key]?.fill)]));
+    const raw = [Math.log10(fillLogs.vacuum * 10 + 1) ** 2.5 / 100, fillLogs.decay / 2000,
+      decimalNumber(pelle.rifts?.chaos?.fill) / 10, (fillLogs.recursion / 4000) ** 0.4, fillLogs.paradox / 100];
+    const percentages = Object.fromEntries(keys.map((key, i) => {
+      const state = pelle.rifts?.[key] ?? {};
+      const reduced = Math.max(0, finiteNumber(state.reducedTo, 1));
+      const spent = key === "decay" ? finiteNumber(state.percentageSpent) : 0;
+      return [key, reduced > 1 ? reduced : Math.max(0, Math.min(raw[i] - spent, reduced))];
+    }));
+    const thresholds = [[4, 6, 40], [20, 60, 100], [9, 15, 100], [10, 15, 100], [15, 25, 50]];
+    const descriptions = [
+      ["Ein einzelner Basis-Glyph mit begrenztem Level und Seltenheit", "Replicanti ohne Limit; Freischaltung und Upgrades e130-mal billiger", "Vacuum verstärkt auch EP"],
+      ["Pelle-AD-Upgrade verstärkt ID1", "Bei Replicanti > e1300 sind Galaxien 10 % stärker", "Zusätzliche RG-Kapazität anhand aller Rift-Meilensteine"],
+      ["Decay-Effekt maximal und alle Decay-Meilensteine aktiv", "Pelle-Sondereffekte für Glyphs", "1 % des aktuellen Eternity-EP-Gewinns pro Sekunde"],
+      ["Dimboost-Stärke anhand EC-Abschlüssen", "ID-Stärke anhand EC-Abschlüssen", "Galaxy Generator dauerhaft freigeschaltet"],
+      ["TD5–8 billiger; weitere Dilation-Upgrades", "TP gehen mit Potenz 1,4 in DT-Gewinn ein", "Dilation-Rebuyables verstärken Infinity-Power-Umwandlung"],
+    ];
+    const decayForced = progress.includes(3) && percentages.chaos >= 0.09;
+    const riftEffects = Object.fromEntries(keys.map((key, i) => [key, {
+      name: names[i], unlocked: progress.includes(i + 1), percentage: 100 * percentages[key],
+      filling: progress.includes(i + 1) && Boolean(pelle.rifts?.[key]?.active) && percentages[key] < 1,
+      milestones: thresholds[i].map((threshold, index) => ({
+        threshold, unlocked: progress.includes(i + 1) && (key === "decay" && decayForced || percentages[key] >= threshold / 100),
+        description: descriptions[i][index],
+      })), effects: {},
+    }]));
+    const milestone = (key, index) => riftEffects[key].milestones[index].unlocked;
+    const totalMilestones = Object.values(riftEffects).reduce((sum, rift) => sum + rift.milestones.filter(m => m.unlocked).length, 0);
+    const ecCount = clears.reduce((sum, count) => sum + count, 0);
+    const inEC = safeInt(save.challenge?.eternity?.current, 12) > 0;
+    if (riftEffects.vacuum.unlocked) {
+      const logFill = (10 ** ((percentages.vacuum * 100) ** 0.4) - 1) / 10;
+      riftEffects.vacuum.effects = inEC
+        ? { ipMultLog10BeforeGoalCap: logFill * 0.1, ipMultGoalCapPower: 0.15 }
+        : { ipMultLog10: logFill * 0.33 };
+      if (milestone("vacuum", 1)) riftEffects.vacuum.effects.replicantiCostDivisorLog10 = 130;
+      if (milestone("vacuum", 2)) riftEffects.vacuum.effects.epMultLog10 =
+        Math.log10(4) * ((decimalLog10(pelle.rifts?.vacuum?.fill) ?? 0) / 616 + 3);
+    }
+    if (riftEffects.decay.unlocked) {
+      const effects = riftEffects.decay.effects;
+      effects.replicantiSpeedMult = Math.sqrt((decayForced ? 2000 : 2000 * percentages.decay) + 1);
+      if (milestone("decay", 0)) effects.firstInfinityDimensionMultLog10 = 50 * (safeInt(pelle.rebuyables?.antimatterDimensionMult) - 9);
+      if (milestone("decay", 1)) effects.galaxyStrengthMult = (decimalLog10(save.replicanti?.amount) ?? 0) > 1300 ? 1.1 : 1;
+      if (milestone("decay", 2)) effects.maxReplicantiGalaxiesBonus = totalMilestones ** 2 - 2 * totalMilestones;
+    }
+    if (riftEffects.chaos.unlocked) {
+      const fill = 10 * percentages.chaos;
+      const scaled = fill > 6.5 ? (fill - 6.5) / 7 + 6.5 : fill;
+      const a = Math.log10(6) * (6 ** (6 ** (scaled / 10 + 0.1)) - 6) - 5;
+      const b = scaled / 10 + 0.1;
+      riftEffects.chaos.effects.timeDimensionsMultLog10 = Math.max(a, b) + Math.log10(1 + 10 ** -Math.abs(a - b));
+      if (milestone("chaos", 2)) riftEffects.chaos.effects.passiveEPFractionPerSecond = 0.01;
+    }
+    if (riftEffects.recursion.unlocked) {
+      const effects = riftEffects.recursion.effects;
+      effects.epDivisor = 308 - 58 * Math.sqrt(percentages.recursion);
+      if (milestone("recursion", 0)) effects.dimensionBoostMultLog10 =
+        Math.log10(Math.max(100 * ecCount ** 2, 1)) + Math.max(4 * (ecCount - 40), 0);
+      // Below 25 ECs the game's fractional power has a negative base; do not
+      // invent a numeric multiplier for that out-of-order state.
+      if (milestone("recursion", 1)) effects.infinityDimensionsMultLog10 = ecCount >= 25 ? 1500 * ((ecCount - 25) / 20) ** 1.7 : null;
+    }
+    if (riftEffects.paradox.unlocked) {
+      const effects = riftEffects.paradox.effects;
+      effects.allDimensionsPower = 1 + 0.4 * percentages.paradox;
+      if (milestone("paradox", 1)) effects.tachyonParticlePower = 1.4;
+      if (milestone("paradox", 2)) effects.infinityPowerConversionMult = Math.min(712,
+        1.1075 ** (Object.values(save.dilation?.rebuyables ?? {}).reduce((sum, n) => sum + safeInt(n), 0) - 60));
+    }
+    const glyph = activeGlyphs[0];
+    const maxLevel = Math.floor((3 * (safeInt(pelle.rebuyables?.glyphLevels) + 1) - 2) ** 1.6);
+    const equipActive = Boolean(pelle.doomed) && milestone("vacuum", 0) && Boolean(glyph)
+      && ["power", "infinity", "replication", "time", "dilation", "companion"].includes(glyph.type);
+    const specialEffectUnlocked = Boolean(pelle.doomed) && milestone("chaos", 1);
+    const specialEffects = {};
+    if (specialEffectUnlocked && equipActive) {
+      if (glyph.type === "infinity") specialEffects.ipMultLog10 = safeInt(save.challenge?.eternity?.current, 12) <= 8 ? logPlusOne(save.infinityPoints) * 0.2 : 0;
+      if (glyph.type === "time") specialEffects.epMultLog10 = logPlusOne(save.eternityPoints) * 0.3;
+      if (glyph.type === "replication") specialEffects.replicantiSpeedMultLog10 = 53 ** percentages.vacuum;
+      if (glyph.type === "dilation") specialEffects.dilatedTimeMultLog10 = 1.5 * Math.max(0, decimalLog10(save.dilation?.totalTachyonGalaxies) ?? 0);
+      if (glyph.type === "power") specialEffects.galaxyStrengthMult = 1.02;
+    }
+    const requirements = ["Infinity erreicht", "Galaxien verstärkt", "Eternity erreicht", "115 TT erreicht", "Time Dilation gestartet"];
+    const penalties = ["AD-Multiplikatoren ^0,5", "ID-Multiplikatoren ^0,5", "Replicanti über e2000 zusätzlich verlangsamt",
+      "Vacuum-IP-Bonus in ECs: Füllung ^0,1 statt ^0,33, gedeckelt bei EC-Ziel ^0,15", "Time Dilation dauerhaft aktiv"];
+    return {
+      strikes: progress.map(id => ({ id, requirement: requirements[id - 1], penalty: penalties[id - 1] })),
+      riftEffects,
+      disabledStudyIds: pelle.doomed ? [32, 33, 41, 51, 61, 62, 121, 122, 123, 141, 142, 143, 192, 213] : [],
+      // Exact keys of Pelle.isDisabled; EPMults includes the separate x5 EP
+      // rebuyable. EU1-6 themselves remain bought/applicable (EU4 yields x1).
+      disabledSystems: pelle.doomed ? ["autoec", "blackhole", "continuum", "alchemy", "glyphsac", "alteration",
+        "chargedInfinityUpgrades", "imaginaryUpgrades", "achievementMult", "IPMults", "EPMults", "timeTheoremAutobuyer", "timeTheorems"] : [],
+      glyphStatus: { maxLevel, effectiveRarity: equipActive ? (glyph.type === "companion" ? glyph.rarity : 0) : null,
+        equipUnlocked: milestone("vacuum", 0), equipActive, specialEffectUnlocked,
+        activeType: glyph?.type ?? null, effectiveLevel: equipActive ? Math.min(glyph.level, maxLevel) : null, specialEffects },
+    };
+  }
+
   function extractProfile(rohSave) {
     if (!rohSave || typeof rohSave !== "object" || Array.isArray(rohSave)) fail("wrongShape");
     const looksLikePlayer = "antimatter" in rohSave || "timestudy" in rohSave || "reality" in rohSave
@@ -748,6 +860,30 @@
     ].find(([, running]) => running)?.[0] ?? null;
     const glyphProjection = earlyGlyphProjection(save, realities, perks, realityUpgrades, achievementIds);
 
+    const auto = save.auto ?? {};
+    const pelleAutoUpgrades = uniqueIds(pelle.upgrades, 0, 21);
+    const pelleAllowsAuto = id => !pelle.doomed || pelleAutoUpgrades.includes(id);
+    const eternitiesForAuto = decimalNumber(save.eternities);
+    const currentECForAuto = safeInt(save.challenge?.eternity?.current, 12);
+    const continuumActive = imaginaryUpgrades.includes(15) && !auto.disableContinuum && !pelle.doomed;
+    // enabled means switches/unlocks permit operation, not that a purchase/reset is due or affordable now.
+    const autoState = (data, unlocked, groupActive = true, blockedReason = null) => ({
+      active: Boolean(data?.isActive), unlocked: Boolean(unlocked),
+      enabled: Boolean(auto.autobuyersOn && data?.isActive && unlocked && groupActive && !blockedReason),
+      ...(blockedReason ? { blockedReason } : {}),
+    });
+    const normalAutoInterval = data => Number.isFinite(data?.interval)
+      ? data.interval / (Array.isArray(save.infinityUpgrades) && save.infinityUpgrades.includes("autoBuyerUpgrade") ? 2 : 1) : null;
+    const adAutoUnlocked = index => pelleAllowsAuto(index < 4 ? 0 : 3)
+      && (Boolean(auto.antimatterDims?.all?.[index]?.isBought) || normalChallenges.includes(index + 1));
+    const adGroupToggleApplies = achievementIds.includes(61) && Array.from({ length: 8 }, (_, index) => index)
+      .every(index => adAutoUnlocked(index) && Number.isFinite(auto.antimatterDims?.all?.[index]?.interval)
+        && auto.antimatterDims.all[index].interval <= 100);
+    const infinityAutoBlock = [2, 8, 10].includes(currentECForAuto) ? `ec${currentECForAuto}` : null;
+    const replicantiAutoBlock = currentECForAuto === 8 ? "ec8" : null;
+    const dimBoostBuyMax = Array.isArray(save.infinityUpgrades) && save.infinityUpgrades.includes("autobuyMaxDimboosts");
+    const autoECUnlocked = perks.includes(60) || bitIds(ra.unlockBits, 0, 30).includes(21);
+
     return {
       platform: "pc",
       legacySave: Boolean(save.legacyMigriert),
@@ -829,6 +965,7 @@
       automatorRunning: safeInt(reality.automator?.state?.mode, 10) === 2
         && Array.isArray(reality.automator?.state?.stack) && reality.automator.state.stack.length > 0,
       automatorRepeat: Boolean(reality.automator?.state?.repeat),
+      automatorForceRestart: Boolean(reality.automator?.state?.forceRestart),
       autoAchievementsEnabled: Boolean(reality.autoAchieve),
       gainedAutoAchievements: Boolean(reality.gainedAutoAchievements),
       // History is newest first. Placeholder runs must not count toward r111/r143.
@@ -849,21 +986,98 @@
       automation: {
         enabled: Boolean(save.auto?.autobuyersOn),
         autoEC: Boolean(reality.autoEC),
+        autoECUnlocked,
+        autoECEnabled: Boolean(reality.autoEC && autoECUnlocked && !pelle.doomed),
+        continuumDisabled: Boolean(auto.disableContinuum),
+        continuumActive,
         retryCelestial: Boolean(save.options?.retryCelestial),
         reality: {
-          active: Boolean(save.auto?.reality?.isActive), mode: safeInt(save.auto?.reality?.mode, 5),
+          ...autoState(auto.reality, realityUpgrades.includes(25), true, pelle.doomed ? "pelle-doomed" : null),
+          mode: safeInt(save.auto?.reality?.mode, 5),
           modeName: ["rm", "glyph-level", "rm-or-glyph-level", "rm-and-glyph-level", "time", "relic-shards"]
             [safeInt(save.auto?.reality?.mode, 5)],
           rmLog10: decimalLog10(save.auto?.reality?.rm), glyph: safeInt(save.auto?.reality?.glyph),
           timeSeconds: finiteNumber(save.auto?.reality?.time), shard: finiteNumber(save.auto?.reality?.shard),
         },
         ...Object.fromEntries(["bigCrunch", "eternity"].map(name => [name, {
-          active: Boolean(save.auto?.[name]?.isActive), mode: safeInt(save.auto?.[name]?.mode, 2),
+          ...autoState(auto[name], name === "eternity" ? eternitiesForAuto >= 100
+            : pelle.doomed ? Boolean(safeInt(pelle.progressBits) & 2) : normalChallenges.includes(12)),
+          mode: safeInt(save.auto?.[name]?.mode, 2),
           modeName: ["amount", "time", "x-highest"][safeInt(save.auto?.[name]?.mode, 2)],
           amountLog10: decimalLog10(save.auto?.[name]?.amount), timeSeconds: finiteNumber(save.auto?.[name]?.time),
           xHighestLog10: decimalLog10(save.auto?.[name]?.xHighest),
           dynamicAmount: Boolean(save.auto?.[name]?.increaseWithMult),
         }])),
+        ...Object.fromEntries(Object.entries({
+        antimatterDims: {
+          active: Boolean(auto.antimatterDims?.isActive), groupToggleApplies: adGroupToggleApplies,
+          ...(continuumActive ? { blockedReason: "continuum" } : {}),
+          all: Array.from({ length: 8 }, (_, index) => {
+            const data = auto.antimatterDims?.all?.[index];
+            return { tier: index + 1, ...autoState(data, adAutoUnlocked(index),
+              (!adGroupToggleApplies || auto.antimatterDims?.isActive) && !continuumActive),
+            modeName: data?.mode === 10 ? "buy-max" : "buy-single", intervalMs: normalAutoInterval(data),
+            bulk: finiteNumber(data?.bulk), unlimitedBulk: achievementIds.includes(61) };
+          }),
+        },
+        infinityDims: {
+          active: Boolean(auto.infinityDims?.isActive),
+          ...(infinityAutoBlock ? { blockedReason: infinityAutoBlock } : {}),
+          all: Array.from({ length: 8 }, (_, index) => ({ tier: index + 1,
+            ...autoState(auto.infinityDims?.all?.[index], pelle.doomed ? pelleAutoUpgrades.includes(9)
+              : eternitiesForAuto >= index + 11, auto.infinityDims?.isActive && !infinityAutoBlock),
+          })),
+        },
+        timeDims: {
+          active: Boolean(auto.timeDims?.isActive),
+          all: Array.from({ length: 8 }, (_, index) => ({ tier: index + 1,
+            ...autoState(auto.timeDims?.all?.[index], realityUpgrades.includes(13) && pelleAllowsAuto(18),
+              auto.timeDims?.isActive),
+          })),
+        },
+        tickspeed: {
+          ...autoState(auto.tickspeed, pelleAllowsAuto(5)
+            && (normalChallenges.includes(9) || Boolean(auto.tickspeed?.isBought)), true,
+          continuumActive ? "continuum" : null),
+          modeName: auto.tickspeed?.mode === 100 ? "buy-max" : "buy-single",
+          intervalMs: normalAutoInterval(auto.tickspeed),
+        },
+        dimBoost: {
+          ...autoState(auto.dimBoost, normalChallenges.includes(10) && pelleAllowsAuto(1)),
+          limitDimBoosts: Boolean(auto.dimBoost?.limitDimBoosts), maxDimBoosts: finiteNumber(auto.dimBoost?.maxDimBoosts),
+          limitUntilGalaxies: Boolean(auto.dimBoost?.limitUntilGalaxies), galaxies: finiteNumber(auto.dimBoost?.galaxies),
+          buyMaxUnlocked: dimBoostBuyMax, buyMaxIntervalSeconds: finiteNumber(auto.dimBoost?.buyMaxInterval),
+          intervalMs: dimBoostBuyMax ? finiteNumber(auto.dimBoost?.buyMaxInterval) * 1000 : normalAutoInterval(auto.dimBoost),
+        },
+        galaxy: {
+          ...autoState(auto.galaxy, normalChallenges.includes(11) && pelleAllowsAuto(4)),
+          limitGalaxies: Boolean(auto.galaxy?.limitGalaxies), maxGalaxies: finiteNumber(auto.galaxy?.maxGalaxies),
+          buyMaxUnlocked: eternitiesForAuto >= 9, buyMaxIntervalSeconds: finiteNumber(auto.galaxy?.buyMaxInterval),
+          intervalMs: eternitiesForAuto >= 9 ? finiteNumber(auto.galaxy?.buyMaxInterval) * 1000 : normalAutoInterval(auto.galaxy),
+        },
+        sacrifice: {
+          ...autoState(auto.sacrifice, eternitiesForAuto >= 7 || infinityChallenges.includes(2)),
+          multiplierLog10: decimalLog10(auto.sacrifice?.multiplier),
+        },
+        replicantiUpgrades: {
+          active: Boolean(auto.replicantiUpgrades?.isActive),
+          ...(replicantiAutoBlock ? { blockedReason: replicantiAutoBlock } : {}),
+          all: ["chance", "interval", "galaxies"].map((name, index) => ({ name,
+            ...autoState(auto.replicantiUpgrades?.all?.[index], pelle.doomed ? pelleAutoUpgrades.includes(12)
+              : eternitiesForAuto >= [50, 60, 80][index], auto.replicantiUpgrades?.isActive && !replicantiAutoBlock),
+          })),
+        },
+        replicantiGalaxies: autoState(auto.replicantiGalaxies, eternitiesForAuto >= 3, true,
+          !achievementIds.includes(138) && Array.isArray(timestudy.studies) && timestudy.studies.includes(131) ? "study-131" : null),
+        timeTheorems: {
+          ...autoState(auto.timeTheorems, perks.includes(104) && !pelle.doomed, true, pelle.doomed ? "pelle-doomed" : null),
+          modeName: perks.includes(106) ? "buy-max" : "buy-single",
+        },
+        ipMultBuyer: autoState(auto.ipMultBuyer, eternitiesForAuto >= 1 && !pelle.doomed,
+          true, pelle.doomed ? "pelle-doomed" : null),
+        epMultBuyer: autoState(auto.epMultBuyer, realityUpgrades.includes(13) && !pelle.doomed,
+          true, pelle.doomed ? "pelle-doomed" : null),
+        }).filter(([name]) => auto[name] && typeof auto[name] === "object")),
         late: Object.fromEntries(["darkMatterDims", "ascension", "annihilation", "singularity", "blackHolePower", "imaginaryUpgrades"]
           .map(name => [name, Boolean(save.auto?.[name]?.isActive)])),
         annihilationMultiplier: finiteNumber(save.auto?.annihilation?.multiplier),
@@ -975,6 +1189,7 @@
         ? save.dimensions.time.filter(dimension => safeInt(dimension?.bought) > 0 || decimalNumber(dimension?.amount) > 0).length
         : 0,
       eternityUpgradeCount: Array.isArray(save.eternityUpgrades) ? save.eternityUpgrades.length : 0,
+      eternityUpgrades: uniqueIds(save.eternityUpgrades, 1, 6),
       epMultUpgrades: safeInt(save.epmultUpgrades, Number.MAX_SAFE_INTEGER),
       dilationStudies,
       dilationUnlocked: dilationStudies.includes(1),
@@ -1102,6 +1317,7 @@
               reducedTo: finiteNumber(pelle.rifts?.[name]?.reducedTo, 1),
               percentageSpent: finiteNumber(pelle.rifts?.[name]?.percentageSpent),
             }])),
+          ...pelleEffectProfile(save, pelle, clears, activeGlyphs),
         },
       },
       fullGameCompletions: safeInt(save.records?.fullGameCompletions, 1_000_000),

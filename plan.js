@@ -2151,14 +2151,23 @@
         // only observable milestones, then preserve its concrete instructions.
         const start = tt >= 103 ? (ep >= 21 ? 21 : ep >= 19 ? 20 : ep >= 16 ? 19 : 18) : tt >= 48 ? (ep >= 12 ? 16 : ep >= 7 ? 15 : 13)
           : tt >= 28 ? (tt >= 41 ? 12 : 9) : (pelle.rifts?.chaos ?? 0) >= 1.5 ? 7 : ep >= 2 ? 5 : 1;
-        const checkpoints = guide.eternityStartCheckpoints.filter(e => e.order >= start).slice(0, 5);
+        const checkpoints = guide.eternityStartCheckpoints.filter(e => e.order >= start
+          && !(e.order === 21 && (pelle.rebuyables?.antimatterDimensionMult ?? 0) >= 26)).slice(0, 5);
         for (const e of checkpoints) {
           // Workbook prose labels the 123/133 trees Active; game IDs and the
           // newer pins agree that this is Idle.
-          const text = e.order === 19 && hat(pelle.progress, 4)
+          let text = e.order === 19 && hat(pelle.progress, 4)
             ? "Der vierte Strike ist bereits ausgelöst. Push mit dem Time-Glyph weiter bis 2,2e18 EP."
             : e.recommendation.replaceAll("Active", "Idle");
-          const titel = ["", "Kauf TD1 und die ersten Time Studies.", "Fülle Chaos vor der nächsten Eternity.",
+          const ad26Gekauft = (pelle.rebuyables?.antimatterDimensionMult ?? 0) >= 25;
+          const inf308Gekauft = (pelle.rebuyables?.infConversion ?? 0) >= 6;
+          if (e.order === 20) text = "e3600 IP und e520000 AM pushen. "
+            + (ad26Gekauft ? "Der e26-RS-AD-Multiplikator ist bereits gekauft. "
+              : "Mit Replicanti auf den e26-RS-AD-Multiplikator warten und ihn kaufen. ")
+            + "Danach e3900 IP, e560000 AM, 6e20 EP, e4000 IP und e580000 AM erreichen. "
+            + (inf308Gekauft ? "Der +3,08-Infinity-Power-Verstärker ist bereits gekauft."
+              : "Den +3,08-Infinity-Power-Verstärker mit Reality Shards kaufen.");
+          let titel = ["", "Kauf TD1 und die ersten Time Studies.", "Fülle Chaos vor der nächsten Eternity.",
             "Farme kleine Eternities und push auf e440 IP.", "Spare 100 EP für TT und TS42.", "Öffne TD3 und push bis e550 IP.",
             "Bring Chaos auf 15 %.", "Farme mit kurzen Eternities bis 28 TT.", "Kauf den AD-Multiplikator für e22 Reality Shards.",
             "Öffne TD4 und erreiche 36 TT.", "Sichere Replicanti dauerhaft und erreiche 41 TT.", "Spare auf den AD-Multiplikator für e23 Reality Shards.",
@@ -2167,6 +2176,7 @@
             "Erreiche 103 TT und TS171.", "Wechsle auf TD und push auf e3300 IP.", hat(pelle.progress, 4) ? "Push weiter bis 2,2e18 EP." : "Löse den vierten Strike aus und push bis 2,2e18 EP.",
             "Push bis 6e20 EP und kauf den Infinity-Power-Verstärker.", "Spare auf den AD-Multiplikator für e27 Reality Shards.",
             "Erreiche die 143 TT für die erste Eternity Challenge."][e.order];
+          if (e.order === 20 && inf308Gekauft) titel = "Push weiter bis 6e20 EP.";
           const schritt = aktion("pelleBisEcs", "pelleCheckpoint", titel,
             [text, "Für den jeweiligen Push wechseln: Power für AM/Remnants, Infinity für IP/Rift 1, Replication für Rift 3, Time für EP/Rift 4. TS21 behalten; Idle benutzen."],
             e.recommendedTT ? `${e.recommendedTT} TT sind erreicht.` : "Die genannten Werte oder Käufe sind erreicht.");
@@ -2192,7 +2202,7 @@
             "Mit TS171 profitiert der TD-Pfad besonders von der stärkeren Time-Shard-Produktion. Die zusätzlichen Tickspeed-Upgrades tragen den langen IP-Push für mehr EP.",
             hat(pelle.progress, 4) ? "Der vierte Strike ist schon aktiv. Weitere EP können Recursion füllen und dessen Verbesserung der EP-Formel ausbauen."
               : "Der vierte Strike öffnet Recursion. Dieses Rift verbessert die Umrechnung von IP in EP; der folgende EP-Push kann den neuen Bonus direkt füllen.",
-            "Der Infinity-Power-Verstärker macht aus derselben Infinity Power einen stärkeren AD-Bonus. Die dafür gesparten EP eröffnen einen neuen Produktionssprung.",
+            "Der IP-/AM-Push finanziert weitere TT und erhöht den EP-Ertrag. Der Infinity-Power-Verstärker wird mit Reality Shards gekauft und macht aus derselben Infinity Power einen stärkeren AD-Bonus; bereits gekaufte Stufen wirken schon.",
             "Das nächste Pelle-AD-Upgrade verstärkt die AD-Kette und über den Decay-Meilenstein ID1. Der permanente Bonus bereitet die stärkere Produktion für die erste EC vor.",
             "Die 143 TT finanzieren den vorgesehenen Einstieg in die Eternity Challenges. Deren wiederholbare Belohnungen und Recursion-Boni liefern den nächsten Ausbau, den bloßes EP-Farmen nicht ersetzt.",
           ][e.order];
@@ -2240,7 +2250,24 @@
     const c = p.celestials ?? {};
     const schritte = [];
     const add = (id, gruppe, titel, wie, fertig, warum) => schritte.push(aktion(id, gruppe, titel, wie, fertig, warum));
-    if (phase === "pelle") schritte.push(...pelleSchritte(p));
+    if (phase === "pelle") {
+      schritte.push(...pelleSchritte(p));
+      const erster = schritte[0];
+      if (erster?.gruppe === "pelleCheckpoint" && (p.totalTT ?? 0) >= 103) {
+        const a = p.automation ?? {};
+        const eternity = a.eternity;
+        const vorab = [];
+        if ((eternity?.enabled ?? (a.enabled && eternity?.active)) && eternity.modeName === "time") {
+          vorab.push(`Auto-Eternity steht bei dir auf ${eternity.timeSeconds} reale Sekunden. Für die langen IP-/AM-/EP-Pushes vorübergehend ausschalten und am erreichten EP-Ziel manuell eternitieren; für kurze Farmzyklen danach mit derselben Einstellung wieder einschalten.`);
+        }
+        if (p.automatorRunning) vorab.push("Dein Automator läuft. Für den manuellen Push pausieren, damit er die Autobuyer-Einstellungen nicht wieder ändert oder selbst zurücksetzt.");
+        const rifts = c.pelle?.riftEffects ?? {};
+        const fuellend = Object.values(rifts).filter(r => r.filling).map(r => r.name);
+        if (fuellend.length) vorab.push(`Gerade füllen ${fuellend.join(" und ")}. Für einen reinen Ressourcen-Push kannst du das Füllen vorübergehend pausieren; die freigeschalteten Rift-Boni bleiben aktiv. Danach gezielt den Rift für das nächste Ziel weiterfüllen.`);
+        if (rifts.chaos?.milestones?.[0]?.unlocked) vorab.push("Chaos hält Decays Effekt und alle drei Meilensteine aktiv. Du musst einen niedrigen Decay-Balken für diese Boni nicht erneut vollmachen; weitere Decay-Füllung dient dem Ausbau von Chaos.");
+        if (vorab.length) erster.vorab = vorab;
+      }
+    }
     if (phase === "v") schritte.push(...vSchritte(p));
     if (phase === "ra") schritte.push(...raSchritte(p));
     if (phase === "imaginaryMachines" || phase === "laitela") {
