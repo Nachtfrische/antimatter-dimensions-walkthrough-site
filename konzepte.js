@@ -327,6 +327,130 @@
             + "tatsächlich brauchst, und schärfe ihn nach, wenn sich dein Ziel ändert." },
       ],
     },
+
+    automatorPruefen: {
+      titel: "Wenn der Automator stehen bleibt",
+      abPhase: "reality",
+      kurzfassung: "Die erste stehende Zeile zeigt, welche Bedingung fehlt. Ein laufendes Script beweist keinen Fortschritt.",
+      abschnitte: [
+        { ueberschrift: "Die nächste Handlung prüfen",
+          text: "Im Text Editor die aktuelle Zeile lesen. Bei wait total tt das tatsächliche TT-Budget prüfen, "
+            + "bei while pending EP die Bedingung und die darin eingeschlossenen Käufe. Nach eternity respec "
+            + "kontrollieren, ob der neue Study-Tree wirklich gekauft wurde. Bei einer EC die aktuelle Challenge "
+            + "und bereits gespeicherte Abschlüsse abgleichen. Dann die nächste beabsichtigte Handlung einmal manuell testen." },
+        { ueberschrift: "Resets müssen zum Ziel passen",
+          text: "Infinity-, Eternity- und Reality-Autobuyer samt globalem Schalter und Freischaltung prüfen. "
+            + "Ein schneller Reality-Reset kann einen langen Reward-Push beenden. Vor einem Spezial-Requirement "
+            + "dessen Lock und Glyphs vorbereiten und das Script anpassen oder pausieren. Stop/Start löst eine "
+            + "dauerhaft falsche Wartebedingung nicht." },
+      ],
+    },
+
+    zeitspeicherLesen: {
+      titel: "Gespeicherte Zeit richtig lesen",
+      abPhase: "enslaved",
+      kurzfassung: "Spielzeit und Echtzeit haben getrennte Speicher. Ein großer gespeicherter Wert wirkt erst, wenn du ihn nutzt.",
+      abschnitte: [
+        { ueberschrift: "Speichern, entladen und invertieren",
+          text: "Store Game Time beziehungsweise Charge legt verstärkte Spielzeit zurück. Discharge gibt sie "
+            + "gezielt in den gewählten Lauf. Pulse nutzt nach seiner Freischaltung wiederholt einen Teil des "
+            + "Vorrats. Store Real Time und Amplify verwenden einen eigenen Echtzeitvorrat. Der BH-Inversionsregler "
+            + "ist eine weitere Einstellung; seine Position ist nicht dieselbe Angabe wie die momentane Game Speed." },
+        { ueberschrift: "Die Einheit gehört zur Zahl",
+          text: "Die Nameless-Felder stored und storedReal des PC-Saves zählen Millisekunden. Auch ein "
+            + "Logarithmus daraus bedeutet log10(ms). Für log10(Jahre) ungefähr 10,499 abziehen; die große Zahl "
+            + "nicht einfach als Jahre beschriften. Vor einem Speziallauf prüfen, ob Pulse oder Discharge "
+            + "überhaupt zulässig sind." },
+      ],
+    },
+
+    raUndAlchemy: {
+      titel: "Ra und Alchemy abwechseln",
+      abPhase: "ra",
+      kurzfassung: "Ra liefert Chunks; vorhandene Chunks liefern auch außerhalb Memories. Alchemy braucht passende Glyphs und Reality-Resets.",
+      abschnitte: [
+        { ueberschrift: "Das nächste Pet-Unlock wählen",
+          text: "Chunks entstehen in Ras Reality. Außerhalb laufen Memories aus vorhandenen Chunks weiter, "
+            + "während du RM, Glyph Level oder Alchemy verbesserst. Fragmentation verstärkt Chunks, Recollection "
+            + "den Memory-Ertrag. Remembrance ist eine eigene Zielwahl: ×5 Chunks für das gewählte Pet und ×0,5 "
+            + "für die anderen. Am nächsten hilfreichen Unlock ausrichten, statt nur ein Symbol dauerhaft zu kaufen." },
+        { ueberschrift: "Auswahlfilter und Verwertung getrennt einstellen",
+          text: "Für Alchemy außerhalb Ra ein GL-Set nutzen und wertvolle Glyphs schützen. Lowest Alchemy Resource "
+            + "wählt ab Effarig 8 passende Angebote; die Verwertung separat auf Refinement stellen. Benötigte "
+            + "Reaktionen einschalten und Realities abschließen. Reaktionen verbrauchen Zutaten. Voll bedeutet "
+            + "die aktuelle Kappe, das globale Maximum ist 25.000. Bei zu niedriger Kappe erst bessere Glyph-Level erreichen." },
+        { ueberschrift: "Reality- und Music-Glyphs bewusst verwenden",
+          text: "Reality-Glyphs erhalten Effekte bei Level 0, 9.000, 15.000 und 25.000. Ihre Herstellung leert "
+            + "die Reality-Alchemy-Ressource; danach wieder auffüllen, falls sie noch gebraucht wird. Music-Glyphs "
+            + "auffüllen und ungeschützte Glyphs opfern sind zwei Handlungen. Gehaltenes Enter bleibt aktive Bedienung. "
+            + "Für AFK an zwei Reality-Zyklen prüfen, ob der eingestellte Sacrifice-Wert wirklich steigt." },
+      ],
+    },
+
+    imKaufgrenze: {
+      titel: "Was einen IM-Kauf wirklich blockiert",
+      abPhase: "imaginaryMachines",
+      kurzfassung: "Bestand, aktuelle Kappe, projizierte Kappe und Preis beantworten verschiedene Fragen.",
+      abschnitte: [
+        { ueberschrift: "Zuerst die Kappe mit dem Preis vergleichen",
+          text: "Liegt der Preis über oder genau auf der IM-Kappe, zuerst einen normalen RM-/Projected-Cap-Push "
+            + "vorbereiten. Die Kappe sollte etwas über dem Preis liegen, weil IM sich ihr nur annähern. "
+            + "Störende Auto-Reality anhalten und die echte Kappe kontrollieren; sie wird laufend aktualisiert. "
+            + "Erst bei einem Preis unterhalb der Kappe kann passives Sammeln bis zum Kauf sinnvoll sein." },
+        { ueberschrift: "Requirement und Kauf getrennt behandeln",
+          text: "Eine gespeicherte Anforderung braucht keinen zweiten Puzzle-Run. Ein gekauftes Upgrade "
+            + "verschwindet aus der To-do-Liste. Für eine noch offene Verlaufsbedingung vor einer frischen "
+            + "Reality Lock, Glyphs und Automation vorbereiten. Beim Glyph-Set zuerst das Ziel festlegen: "
+            + "RM-/IM-Kappe, GL oder DM/DE können unterschiedliche Effekte brauchen." },
+      ],
+    },
+
+    laitelaMessen: {
+      titel: "Lai'tela mit einem Messlauf verbessern",
+      abPhase: "laitela",
+      kurzfassung: "Erst ein Abschluss unter 30 Sekunden deaktiviert eine weitere Dimension. Ein besserer Versuch ist noch kein Clear.",
+      abschnitte: [
+        { ueberschrift: "Den Abstand messen",
+          text: "YDDDD und YEDDD sind Kandidaten mit passenden Effekten, keine Erfolgsgarantie. "
+            + "Aktive Dimensionen und Zeit eines Versuchs notieren. Ein Lauf mit 31,05 Sekunden liegt noch "
+            + "1,05 Sekunden über dem Ziel. Dann günstige DM-/DE-Upgrades, Intervalle, Ascension, Singularities, "
+            + "Annihilation und IM prüfen, bevor du denselben Versuch ständig wiederholst." },
+        { ueberschrift: "Automation und Mehrfachertrag unterscheiden",
+          text: "Auto-Condense beginnt bei 8 Gesamt-Singularities, zunächst oberhalb von 1,3× der DE-Kappe. "
+            + "Bei 50 kommt ×2 Singularity-Ertrag hinzu. Chiral Oscillation verlangt mindestens 20 in einem "
+            + "automatischen Ereignis; ein manueller Klick zählt nicht. Die 50er-Marke ist dafür eine "
+            + "Community-Vorbereitung, der Kaufpreis bleibt separat zu prüfen." },
+        { ueberschrift: "Kleine Verbesserungen vor fernen Farmzahlen",
+          text: "Früh lohnen sich Annihilation-Zyklen nach einigen Minuten, wenn der Mehrertrag den Wiederaufbau "
+            + "rechtfertigt. Der Multiplikator ×2e8–2e9 ist eine späte Orientierung. Er ist keine frühe "
+            + "Zugangsschwelle. Für AFK nur freigeschaltete DM-Käufe, Auto-Ascend und Auto-Singularity "
+            + "passend einstellen und den tatsächlichen Ertrag beobachten." },
+      ],
+    },
+
+    pelleEngpass: {
+      titel: "Pelle: Farm, Push und Rifts abstimmen",
+      abPhase: "pelle",
+      kurzfassung: "Die Einstellungen richten sich nach dem aktuellen Ziel. Pausierter Rift-Drain erhält bereits erreichte Boni.",
+      abschnitte: [
+        { ueberschrift: "EP pro Minute oder ein langer Push",
+          text: "Für EP/min Auto-Eternity einschalten und kurze Intervalle vergleichbar testen. "
+            + "Für einen langen IP-/AM-/EP-Push oder EC Auto-Eternity ausschalten und störenden Automator prüfen. "
+            + "Danach das Farmprofil wiederherstellen. Glyph nach Engpass wählen: Infinity für IP, Time für EP, "
+            + "Power für AM, Replication für Decay/Chaos. Jeden RS-Kauf gegen den aktuellen Bestand prüfen." },
+        { ueberschrift: "Effektstatus statt nur Balkenstand",
+          text: "Rifts dürfen während eines Pushs pausieren, wenn sie die benötigte Ressource abziehen. "
+            + "Bereits erreichte Boni bleiben. Chaos ab 9 % erhält Decay-Meilensteine auch bei kleinem sichtbarem "
+            + "Decay-Balken. Bei EC8 zusätzlich Kaufbudgets, Replicanti, Chaos und Auto-Crunch prüfen; "
+            + "ein korrekter Tree allein erklärt keinen Stillstand." },
+        { ueberschrift: "60 EC-Clears sind noch kein END",
+          text: "Nach dem fünften Strike folgen permanente Dilation, Paradox und Galaxy Generator. "
+            + "Vorhandene passende Studies behalten. Bei 23 % Paradox zuerst 25 % erreichen, dann günstige neue "
+            + "Käufe und später 50 % angehen. Am 50-%-Meilenstein TS223 gegen TS224 prüfen. Um e55 DT "
+            + "Recursion wieder füllen und den Generator freischalten. Erst die abgeschlossenen Generatorphasen "
+            + "und das tatsächliche END belegen den Spielabschluss." },
+      ],
+    },
   };
 
   window.AD_KONZEPTE = KONZEPTE;

@@ -691,6 +691,7 @@
         "Kauf Reality Upgrades und Perks mit Automator-Punkten, bis die Freischaltung erreicht ist.",
         "Beginne mit einem Skript für Time-Study-Import, Eternity und Reality.",
         "Teste es einmal sichtbar und ergänz erst danach optionale Wartebedingungen.",
+        "Bei Stillstand im Text Editor die aktuelle Zeile prüfen: wait total tt und while pending EP mit den echten Werten vergleichen; nach eternity respec müssen die Studies neu gekauft sein. EC-Retry, ausgeschaltete Autobuyer und auto reality einzeln prüfen, dann die nächste Handlung manuell testen.",
       ],
       fertigWenn: "Der Automator ist freigeschaltet und ein getestetes Basisskript ist gespeichert.",
     },
@@ -1036,7 +1037,8 @@
         + "dagegen gesperrt werden. Die Entscheidung gehört deshalb bewusst an diese Zäsur.",
       soGehts: [
         "Exportier zur Sicherheit einen separaten Save, bevor du den Doom-Knopf drückst.",
-        "Prüf die Warnung auf dauerhaft gesperrte Inhalte und stoppe, wenn du sie vorher noch holen willst.",
+        "Prüf Pelles Eintrittsanzeige: Alle Achievement-Reihen vor Pelle und alle 21 Alchemy-Ressourcen müssen an ihrer aktuellen Kappe sein. 25.000 ist das globale Alchemy-Maximum; maßgeblich ist der capped-Status im Pelle-Tab.",
+        "Der Pin Nothing before Doom meint: nach erfüllten Eintrittsbedingungen keinen unnötigen Vorfarm erzwingen. Prüfe die Warnung auf gesperrte geheime Achievements; diese Gelegenheiten bleiben optional.",
         "Starte Doom und lies Pelles ersten Upgrade- und Armageddon-Text.",
       ],
       fertigWenn: "Der Save ist als doomed markiert und der Pelle-Tab zeigt Reality Shards.",
@@ -1374,6 +1376,7 @@
     "",
     "Antimatter Dimensions (Web/Steam). Bitte beantworte meine Frage am Ende auf Deutsch und prüfe den vorgeschlagenen Plan anhand meines Spielstands.",
     "Save-Momentaufnahme, kein Live-Stand. Schätzungen sind gekennzeichnet; der Rohsave ist nicht enthalten.",
+    "Nach jedem Import erledigte Ziele, Käufe und gespeicherte Bedingungen neu abgleichen. Zahlen immer mit Exponent und Währung lesen: e28 = 10^28; im englischen Spiel ist Oc = 10^27 (deutsch Quadrilliarde).",
   ];
 
   const felderAus = (objekt, felder) => Object.fromEntries(felder.split(/\s+/)
@@ -1399,13 +1402,13 @@
     if (erreicht("infinity")) {
       daten.infinity = felderAus(p, `infinityUnlocked normalChallenges infinityChallenges infinityChallengesUnlocked
         breakInfinity breakInfinityReady bigCrunchInterval ipMultPurchases infinityUpgrades infinityRebuyables
-        infinityDimensionsUnlocked infinityPowerExponent replicantiUnlocked replicantiGalaxies replicantiGalaxyCap`);
+        infinityDimensionsUnlocked infinityPowerExponent replicantiUnlocked replicantiGalaxies replicantiGalaxyCap replicantiUpgrades`);
       daten.challenges = felderAus(p.currentChallenge, "normal infinity");
       Object.assign(daten.ressourcen, felderAus(r, "infinityPoints infinityPointsExponent maxInfinityPointsExponent infinities"));
     }
     if (erreicht("earlyEternity")) {
       daten.eternity = felderAus(p, `eternityUnlocked totalTT unspentTT studies clears timeDimensionsUnlocked
-        eternityUpgradeCount eternityUpgrades epMultUpgrades totalTickGained currentEternityRealSeconds currentRun`);
+        eternityUpgradeCount eternityUpgrades epMultUpgrades totalTickGained currentEternityRealSeconds currentRun ec8PurchasesLeft`);
       daten.challenges = felderAus(p.currentChallenge, "normal infinity eternity eternityUnlocked requirementBits");
       Object.assign(daten.ressourcen, felderAus(r, `eternityPoints eternityPointsExponent maxEternityPointsExponent
         eternities bankedInfinities maxReplicantiExponent infinitiesLog10 bankedInfinitiesLog10 eternitiesLog10 timeShardsLog10`));
@@ -1419,20 +1422,20 @@
     if (erreicht("reality")) {
       daten.reality = felderAus(p, `reality realities realityUpgrades realityUpgradeUnlocks realityRequirementLocks
         realityRebuyables perks perkPoints autoAchievementsEnabled gainedAutoAchievements realityGameTimeMs realityRealTimeMs totalTimePlayedMs currentRun`);
-      daten.bedingungen = felderAus(p.requirementChecks, "onlyAD1 onlyAD8 noAD1 noAM noPurchasedTT noEternities noInfinities noRG noAD8 maxGlyphs slowestBlackHole");
+      daten.bedingungen = felderAus(p.requirementChecks, "onlyAD1 onlyAD8 noAD1 noAM noPurchasedTT noEternities noInfinities noRG noAD8 maxGlyphs maxID1 maxID1Log10 maxStudies slowestBlackHole");
       const effektIds = [...new Set([...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? []),
         ...(p.glyphSets ?? []).flatMap(set => set.glyphs ?? [])].flatMap(g => g.effectIds ?? []))];
       daten.glyphs = { columns: GLYPH_SPALTEN, effectIds: effektIds,
         activeGlyphs: glyphZeilen(p.activeGlyphs, effektIds), inventoryGlyphs: glyphZeilen(p.inventoryGlyphs, effektIds),
         ...felderAus(p, `glyphRespecEnabled glyphSacrificeLog10 bestGlyphLevel bestGlyphRarity
-          glyphProtectedSlots glyphRespecIntoProtected glyphSetMatch glyphFilter glyphLevelWeights autoAdjustGlyphWeights`),
+          glyphProtectedSlots glyphRespecIntoProtected glyphAutoPurge glyphSetMatch glyphFilter glyphLevelWeights autoAdjustGlyphWeights`),
         glyphSets: (p.glyphSets ?? []).map(set => ({ slot: set.slot, glyphs: glyphZeilen(set.glyphs, effektIds) })) };
       if (p.glyphFilter) daten.glyphs.glyphFilter = { ...p.glyphFilter,
         types: Object.fromEntries(Object.entries(p.glyphFilter.types ?? {}).map(([type, filter]) => [type,
           felderAus(filter, "rarity score effectCount specifiedEffects effectScoresByEffect")])) };
       daten.prognosen = felderAus(p, erreicht("teresa")
         ? "pendingGlyphLevel" : "gainedRMEstimate gainedRMIsEstimate pendingGlyphLevel");
-      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorModeName automatorOn automatorRunning automatorRepeat automatorForceRestart");
+      daten.automation = felderAus(p, "automatorPoints automatorUnlocked automatorScriptCount automatorModeName automatorOn automatorRunning automatorRepeat automatorForceRestart automatorCurrentLine");
       Object.assign(daten.automation, p.automation ?? {});
       daten.blackHoles = felderAus(p, "blackHoles blackHolePaused blackHoleAutoPauseModeName blackHoleNegative gameTimeSinceBlackHoleMs");
       Object.assign(daten.ressourcen, felderAus(r, "realityMachines realityMachinesLog10 maxRealityMachines maxRealityMachinesLog10"));
@@ -1453,7 +1456,7 @@
     if (erreicht("imaginaryMachines")) {
       daten.imaginary = felderAus(p, "imaginaryUpgrades imaginaryUpgradeUnlocks imaginaryRequirementLocks imaginaryRebuyables continuumDisabled");
       Object.assign(daten.bedingungen, felderAus(p.requirementChecks, "noContinuum"));
-      Object.assign(daten.ressourcen, felderAus(r, "imaginaryMachines imaginaryMachineCap"));
+      Object.assign(daten.ressourcen, felderAus(r, "imaginaryMachines imaginaryMachineCap projectedImaginaryMachineCap"));
     }
     if (erreicht("complete")) daten.abschluss = felderAus(p, "isGameEnd fullGameCompletions");
     // A finite log is authoritative when a native number saturated. Do not
@@ -1486,20 +1489,34 @@
       "Rift-Prozente berücksichtigen bereits verbrauchte Decay-Füllung und Generator-Abzüge (reducedTo). Ab 9 % Chaos bleiben Decays Effekt und alle drei Meilensteine aktiv, auch bei niedrigem Decay-Balken. Freigeschaltet bedeutet nicht zwingend stärker: Recursions Dimboost-Bonus ist bei 0 EC-Abschlüssen noch ×1.",
       "Glyph-Zeilen zeigen Inventarwerte. In Pelle gelten das gesonderte Level-Limit und 0 % Seltenheit; Glyph-Sacrifice und Alchemie wirken nicht. Der besondere Effekt des einzelnen Glyphs wird erst ab 15 % Chaos freigeschaltet. Die daraus berechneten aktuellen Werte stehen unter pelle.glyphStatus. Deaktivierte Studies und Systeme sind gesondert aufgeführt; EU4 ist kaufbar, sein Achievement-Bonus bleibt in Pelle jedoch ×1.",
       "Automation: active ist der gespeicherte Schalter, enabled berücksichtigt zusätzlich Hauptschalter, Freischaltung und Sperren; es ist keine Vorhersage des nächsten Kaufs. Zeitgrenzen der Autobuyer sind reale Sekunden. Automator-Modus und laufender Stack werden getrennt erfasst; Skriptinhalte werden nicht exportiert. Auto-EC, Black Holes und Continuum sind in Pelle deaktiviert, auch wenn gespeicherte Schalter noch an sind.",
+      "Pelle-Farm oder Push: Für EP/min kurze Auto-Eternities mit Time-Glyph vergleichen; vor langem IP-/TT-Push oder EC Auto-Eternity und störende Skript-Resets pausieren. Vor RS-Käufen aktuellen Preis und Bestand vergleichen. 60/60 EC und fünf Strikes sind noch kein Spielende: Paradox und Generator gesondert prüfen.",
     ];
     const ra = c.ra ?? {};
     const pets = ra.pets ?? {};
-    if (!ra.running && !Object.values(pets).some(level => level > 1)) return [];
-    const hinweise = [
+    const hinweise = [];
+    if (p.automatorUnlocked && p.realities > 0) hinweise.push(
+      "Automator-Stall: Im Text Editor die aktuelle Zeile mit total TT, pending EP, EC-Abschlüssen und dem Study-Tree abgleichen. Nach eternity respec den tatsächlichen Neukauf prüfen; EC-Retry und Infinity-/Eternity-/Reality-Autobuyer prüfen. Die erste beabsichtigte Handlung einmal manuell testen; Neustart allein korrigiert keine falsche wait-/while-Bedingung.");
+    if (c.enslaved?.unlocks?.length || c.enslaved?.completed || c.enslaved?.isStoring || c.enslaved?.isStoringReal) hinweise.push(
+      "Nameless: storedTime, storedTimeLog10 und storedRealTime sind in Millisekunden, nicht Jahren. Game-Time-Speicher/Charge, Discharge, automatischer Pulse und Real-Time-Speicher sind getrennt. Der Inversionsregler blackHoleNegative ist nicht die momentane Game Speed; beim Speziallauf auch Pause und erlaubte Entladung prüfen.");
+    if ((p.resources?.imaginaryMachineCap ?? 0) > 0) hinweise.push(
+      "iM wachsen passiv bis zum gespeicherten Cap. Preis über oder gleich Cap verlangt zunächst einen höheren Cap; Projected IM cap ist hier nicht exakt berechenbar (null), daher live im Spiel prüfen. Ein neuer höherer Cap wird laufend gespeichert, ohne Pflicht-Reality. Gekaufte Upgrades, erfüllte Anforderungen und Locks getrennt prüfen; maxID1/maxStudies/maxGlyphs sind der Verlauf dieser Reality, nicht nur der aktuelle Tree.");
+    if (!ra.running && !Object.values(pets).some(level => level > 1)) return hinweise;
+    hinweise.push(
       "Ra: neue Chunks nur in Ra; Echtzeit-Speichern stoppt neue Chunks, Memories laufen weiter. Chunk-Quellen Teresa/Effarig/Nameless/V: EP/Relic-Shard-Gewinn/Time Shards/Infinity Power. Remembrance: gewähltes Pet ×5 Chunks, andere ×0,5.",
+      "Recollection verbessert Memories pro Chunk, Fragmentation die Chunk-Produktion; beide kosten Memories und konkurrieren mit dem nächsten Pet-Level. Remembrance wählt dagegen ein Pet für den Chunk-Bonus und ist kein gekauftes Recollection-/Fragmentation-Upgrade.",
       "Glyph-Zeilen enthalten gespeicherte Werte und Effekt-IDs, keine vollständige Berechnung aller späten Boni. Presets sind Suchmuster, keine zusätzlichen Inventar-Glyphen; Glyph-slot nullbasiert, Preset-slot ab 1. Sets aus dem Plan sind Empfehlungen, kein gemessenes Optimum. Nameless-Zeitspeicher: Millisekunden (auch storedTimeLog10).",
-    ];
+      "Glyph-Set nach Aufgabe testen: RM/IM-Cap, Glyph-Level, DM/DE, Lai'tela und Spezial-Requirements brauchen unterschiedliche Effekte. ERRRT ist ein RM-Kandidat, ERRRD/ERRRR sind GL-Kandidaten; vorhandene Effekte und echte Projected-Werte bzw. Run-Zeit entscheiden.",
+    );
     if ((pets.effarig ?? 0) >= 2) hinweise.push(
       "Alchemie: cap ist die derzeitige Kappe, globalCap das Endmaximum. Basis-Kappen stammen aus dem besten bisherigen Refinement je Typ, zusammengesetzte aus der kleinsten Zutaten-Kappe. Bessere Glyphen erhöhen Kappen; Reaktionen laufen pro Reality, nicht pro Sekunde. Echtzeit-Verstärkung vervielfacht sie nicht.");
     if ((pets.effarig ?? 0) >= 8) hinweise.push(
-      "Alchemie-Farm: Glyph-Filter und Verwertung zusammen prüfen (Lowest Alchemy Resource + Refinement), Reaktionen einschalten; wertvolle Set-Glyphen vorher schützen. Ein aktuelles Cap unter 25.000 ist kein Defekt.");
+      "Alchemie-Farm: Auswahlfilter Lowest Alchemy Resource oder Refinement Value; Verwertung separat auf Always refine oder Refine to cap, then sacrifice. Zielreaktionen einschalten, wertvolle Glyphen schützen, schnelle Realities beobachten. Reaktionen verbrauchen Zutaten; bei stagnierender Kappe erst Glyph-Level/Refinement verbessern, für gleiche Kappe den Durchsatz vergleichen.");
+    if ((c.teresa?.perkShop?.[4] ?? 0) > 0 || (c.teresa?.perkShop?.[5] ?? 0) > 0) hinweise.push(
+      "Music-Glyphs: Fill inventory erzeugt sie nur. Sacrifice all unprotected ist ein eigener Schritt; Enter-Halten erfordert Bedienung. Für AFK normale schnelle Realities mit Auto-Sacrifice nutzen, Music-Auffüllen bleibt Bedienung. Auto-Purge und Glyph-Verwertung prüfen und zwei Realities beobachten: Der Sacrifice-Wert muss steigen. Geschützte Reihen und Spezialglyphen behalten.");
     if ((pets.effarig ?? 0) >= 25) hinweise.push(
       "Reality-Glyph: Effekte ab Level 0/9.000/15.000/25.000; Herstellung leert die Reality-Alchemieressource. Danach wieder auffüllen. Momentum wächst mit realer Zeit; zusätzliche schnelle Resets ersetzen diese Wartezeit nicht.");
+    if ((pets.v ?? 0) >= 6) hinweise.push(
+      "Hard V: Vor dem Versuch V-Pet-Level, Triad-Zugang und aktuelle Zielreduktionen prüfen. Post-destination braucht 400.000 freie TT und den geforderten Inversionsregler während des ganzen Runs; kein Discharge und kein EC12. Requiem zählt die höchste effektive Glyphzahl im Run (Cursed −3), nachträgliches Ablegen repariert sie nicht.");
     const meilensteine = [];
     if ((pets.enslaved ?? 0) >= 15 && pets.enslaved < 25) meilensteine.push("Nameless25: Game-Speed-Effekt auf allen Basisglyphen + weiterer Time-Effekt");
     if ((pets.v ?? 0) >= 18 && pets.v < 24) meilensteine.push("V24: vierte Triad Study");
@@ -1507,8 +1524,6 @@
     if (meilensteine.length) hinweise.push(`Offene späte Ra-Meilensteine: ${meilensteine.join("; ")}.`);
     if ((pets.teresa ?? 0) >= 25 && c.current) hinweise.push(
       "Celestial-Run: Teresas Level-25-Startbonus für TP gilt hier nicht. Automator muss nötige Dilation weiterhin ausführen (TP ≤ 10); vor einem vorgeschlagenen Reset das aktuelle Run-Ziel und retryCelestial prüfen.");
-    if ((p.resources?.imaginaryMachineCap ?? 0) > 0) hinweise.push(
-      "iM werden passiv bis zum gespeicherten Cap erzeugt. Liegt es unter den nächsten Kosten, hilft Warten allein nicht: Cap durch RM-Push/Upgrades erhöhen. Gekaufte Upgrades, erfüllte Anforderungen und Requirement Locks sind getrennt aufgeführt.");
     return hinweise;
   }
 

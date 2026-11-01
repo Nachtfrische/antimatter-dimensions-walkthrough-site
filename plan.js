@@ -1941,7 +1941,7 @@
     const st = normaleVTheoreme(p);
     const farm = st >= 35 ? 93 : st >= 30 ? 90 : st >= 26 ? 84 : st >= 20 ? 82 : st >= 16 ? 70 : 0;
     if (rmLog(p) < farm) add("vFarm", `Push außerhalb von V auf ungefähr e${farm} RM.`,
-      [`Wechsel zwischen RM-Läufen und Glyph-Farming. ${st >= 20 && (p.celestials?.enslaved?.tesseracts ?? 0) < 2 ? "Kauf dabei den zweiten Tesseract." : "Nimm verbesserte Glyphs in die nächsten V-Sets mit."}`,
+        [`Wechsel zwischen RM-Läufen und Glyph-Farming. ${st >= 20 && (p.celestials?.enslaved?.tesseracts ?? 0) < 2 ? "Prüfe dabei den zweiten Tesseract: Sein Kaufpreis ist IP, nicht die RM-Farmmarke; erst beim angezeigten IP-Preis kaufen." : "Nimm verbesserte Glyphs in die nächsten V-Sets mit."}`,
         st >= 26 ? "Ab hier nennt der Guide zusätzlich Level 6000+ und etwa e32 Glyph Sacrifice, vor AntiStellar 6 etwa e34." : "Ab 16 V-Abschlüssen Auto Purge einschalten und geschützte Inventarreihen freigeben, wenn dort nichts aufbewahrt werden soll."], `Die nächste V-Etappe erhält den RM- und Glyph-Zuwachs.`);
     for (const [id, tier] of V_ROUTE.filter(([id, tier]) => (v.runUnlocks?.[id] ?? 0) < tier)) {
       const [name, werte] = V_ZIELE[id];
@@ -1957,7 +1957,8 @@
         [`Vor einem neuen V-Lauf ${code ? glyphBuild(code) + " ausrüsten" : "alle normalen Glyphs ablegen"}.`,
           ...(code.includes("e") ? [`Effarig-Effekte: ${st < 30 || id === 5 ? "3567" : id === 2 ? "3457" : "3467"} in der Reihenfolge der Effektliste.`] : []),
           `${id === 1 ? "Active" : "Idle"} benutzen${st >= 20 && id !== 1 ? " und TS131+132 dazukaufen" : st >= 10 && id !== 1 ? " und TS131 dazukaufen" : ""}. ${id === 5 ? "TS221, 224 und 231 wirken für Matterception nicht." : id === 2 ? "TS221 und 227 helfen in EC7 nicht." : "Übrige ST zuerst in TS221 und 226 investieren."}`,
-          `In V ${bedingung}. Ab 24 Abschlüssen hilft gespeicherte Black-Hole-Zeit zunehmend. Wenn die Stufe stockt, zuerst die benachbarte Etappe oder bessere Glyphs versuchen.`], `${name} steht mindestens auf Stufe ${tier}.`,
+          `In V ${bedingung}. Ab 24 Abschlüssen hilft gespeicherte Black-Hole-Zeit zunehmend. Wenn die Stufe stockt, zuerst die benachbarte Etappe oder bessere Glyphs versuchen.`,
+          ...(id === 3 ? ["Bei einem Young-Boy-Stall zuerst den aktuell reduzierten Zieltext, Effarigs All-Dimensions-Potenz und die Space-Theorem-Studies prüfen. Ein RM-Effarig mit anderen Effekten ersetzt dieses Profil nicht; längere Wartezeit allein behebt fehlende Effekte nicht."] : [])], `${name} steht mindestens auf Stufe ${tier}.`,
         `${name} ${tier} bringt einen weiteren Space Theorem. ` + [
           "Die Glyph-Grenze lässt nur wenige Effekte zu. Replication vereint Geschwindigkeit, Multiplikator und DT; Dilation ergänzt bei zwei Plätzen den DT-Aufbau. Bei der letzten Stufe müssen alle normalen Glyphs weg.",
           "Das Ziel zählt Galaxien. Dilation- und Replication-Effekte erhöhen TGs und RGs, Active ergänzt die RG-Anzahl über TS131.",
@@ -1985,15 +1986,17 @@
           : Math.max(...Object.values(p.glyphSacrificeLog10 ?? { none: 0 })) >= 43 ? "rrrrr" : "iiirr";
       s.push(aktion("raPetRouteFahren", "raPetRoute", `Trainiere ${name === "enslaved" ? "Nameless" : name[0].toUpperCase() + name.slice(1)} von Level ${lvl} auf ${ziel}.`,
         [`Rüste ${glyphBuild(code)} für Ra aus. ${name === "enslaved" ? "ECs mit abschließen: Die Time Shards erzeugen die Chunks." : `Push ${name === "teresa" ? "EP" : name === "effarig" ? "Relic Shards" : "Infinity Power"} für mehr Chunks.`}`,
-          "Kauf auch Fragmentation (Würfel) und Recollection (Gehirn), nicht ausschließlich Pet-Level. Fragmentation zuerst; bei geraden Teresa-Leveln zunächst Recollection kaufen.",
+          "Kauf auch Fragmentation (mehr Chunks) und Recollection (mehr Memories pro Chunk), nicht ausschließlich Pet-Level. Fragmentation zuerst; kurz vor einem erreichbaren Level kann Recollection helfen. Remembrance wählt separat das bevorzugte Pet und ist keines dieser Kauf-Upgrades.",
           "Chunks entstehen in Ra, Memories laufen auch außerhalb weiter. Nutze die Wartezeit für Alchemy, RM und Glyphs."], `Das Pet erreicht Level ${ziel}.`,
         `${name === "teresa" ? "Teresa erzeugt Chunks anhand von EP; das gemischte Produktionsset pusht deshalb EP." : name === "effarig" ? "Effarigs Chunks wachsen mit Relic Shards; verschiedene Glyph-Typen liefern viele unterschiedliche Effekte für den Shard-Ertrag." : name === "enslaved" ? "Nameless erzeugt Chunks anhand von Time Shards. Replication und Time verstärken über den TD-Pfad genau diese Produktion." : "V erzeugt Chunks anhand von Infinity Power. Infinity- und Replication-Effekte stärken diese Ressource."} `
           + (name === "teresa" && ziel === 8 ? "Level 8 öffnet Effarigs Memories." : name === "effarig" && ziel === 8 ? "Level 8 öffnet die Nameless-Memories." : name === "enslaved" && ziel === 5 ? "Level 5 erhöht die Memory-Produktion aller Chunks anhand der gesamten Spielzeit." : name === "effarig" && ziel === 10 ? "Level 10 garantiert vier Effekte auf normalen Glyphs und erlaubt bis zu sieben auf Effarig-Glyphs." : "Das nächste Level verstärkt dieses Pet und bringt es näher an seine nächste angezeigte Freischaltung.")));
     }
     if ((pets.effarig ?? 0) >= 2 && (p.alchemyAtCapCount ?? 0) < 21) s.push(aktion("raSpaetarbeitMachen", "raAlchemy", "Fülle die aktuell freigeschalteten Alchemy-Ressourcen.",
-      ["Verlasse Ra und push zuerst RM und Glyph-Level. Stelle Glyph-Verwertung auf Refinement.",
-        (pets.effarig ?? 0) >= 8 ? "Filter: Lowest Alchemy Resource. Verfeinere ungefähr die Glyph-Level, die ein 10-Sekunden-Lauf liefert." : "Filter: Refinement Value. Verfeinere Glyphs aus ungefähr 10-Sekunden-Läufen, um die Ressourcen-Kappen anzuheben.",
-        "Danach schnelle Realities um 0,3 Sekunden für die Reaktionen laufen lassen, bis die offenen Ressourcen einen durchgehenden orangefarbenen Rand haben. Dann erneut RM pushen."], "Die offenen Alchemy-Ressourcen stehen an ihrer derzeitigen Kappe."));
+      ["Verlasse Ra und push zuerst RM und Glyph-Level. Schütze gute Preset-, Reality- und Spezialglyphs vor der Verwertung. ERRRD und ERRRR sind GL-Kandidaten; ERRRT kann ein RM-Set sein. Die tatsächlichen Effekte und Projected-Werte entscheiden.",
+        (pets.effarig ?? 0) >= 8 ? "Wähle im Glyph-Filter Lowest Alchemy Resource und bei der Verwertung bewusst Refinement beziehungsweise Refine to cap, then sacrifice. Auswahlfilter und Verwertung sind getrennte Einstellungen." : "Wähle Refinement Value im Glyph-Filter und Refinement bei der Verwertung. Höhere Glyph-Level und Seltenheit können Ausbeute und Ressourcen-Kappen anheben.",
+        "Aktiviere die benötigten Alchemy-Reaktionen. Lass mehrere schnelle Realities laufen und prüfe, ob Zutaten und Zielprodukte steigen; Reaktionen verbrauchen ihre Zutaten. Ein orangefarbener Rand bedeutet die aktuelle Kappe, nicht automatisch 25.000.",
+        "Wenn die Kappen nicht mehr steigen, Glyph-Level oder Seltenheit verbessern. Für reine Reaktionszyklen den schnelleren Lauf wählen, wenn beide Varianten dieselben Kappen bedienen. Momentum wächst mit realer Zeit.",
+        "Reality-Glyph-Effekte kommen bei Level 0, 9.000, 15.000 und 25.000 hinzu. Das Herstellen leert Reality-Alchemy; danach diese Ressource wieder auffüllen. Vorhandene gute Reality-Glyphs behalten."], "Die benötigten Alchemy-Ressourcen stehen an ihrer aktuellen Kappe; die nächsten GL-/RM-Werte sind geprüft."));
     const vLevel = pets.v ?? 0;
     const runs = p.celestials?.v?.runUnlocks ?? [];
     const hard = [
@@ -2005,8 +2008,9 @@
     for (const [id, ziel, code] of hard.filter(([id, ziel]) => (runs[id] ?? 0) < ziel)) {
       s.push(aktion("raSpaetarbeitMachen", "hardV", `${id === 6 ? "Requiem for a Glyph" : id === 7 ? "Post-destination" : "Shutter Glyph"}: nächste offene Stufe bis ${ziel}.`,
         [`Für einen neuen V-Lauf ${glyphBuild(code)} vorbereiten. Cursed zählt als −3 Glyphs.`,
+          `Vor dem Start V-Pet-Level ${vLevel}, freigeschaltete Triad-Studies, aktuelle Goal Reductions und ${zahl(p.unspentTT)} freie TT prüfen. Ein empfohlenes Pet-Level allein belegt die Machbarkeit nicht.`,
           id === 7 ? "TS302 kaufen. Den Inversionsregler passend zum nächsten Ziel auf 1/e100, 1/e150, 1/e200, 1/e250 oder 1/e300 stellen. Nicht entladen und EC12 nicht betreten; dann 400.000 freie TT erreichen."
-            : id === 6 ? "TS301 kaufen. In einer EC respecen und den kürzesten Dilation-Weg für TT-Erzeugung kaufen. Bei Requiem 1 zunächst 1× Cursed + Effarig + Time, ab Stufe 2 das oben genannte Set verwenden."
+            : id === 6 ? "TS301 kaufen. Die maximale effektive Glyph-Anzahl zählt während des gesamten Runs; nachträgliches Ablegen repariert einen verletzten Versuch nicht. In einer EC respecen und den kürzesten Dilation-Weg für TT-Erzeugung kaufen. Bei Requiem 1 zunächst 1× Cursed + Effarig + Time, ab Stufe 2 das oben genannte Set verwenden."
               : `In V das nächste angezeigte Glyph-Level erreichen: ${[6500,7000,8000,9000,10000][runs[8] ?? 0]} vor eventueller Perk-Point-Senkung.`,
           "Nach der Stufe zurück zur Pet-/Alchemy-Route; die Richtwerte in den Pins sind kein Grund, bereits machbare Stufen aufzuschieben."], "Die nächste Hard-V-Stufe ist gespeichert.",
         "Diese Hard-V-Stufe liefert zusätzliche Space Theorems. " + (id === 6
@@ -2026,9 +2030,9 @@
     [14,"Recollection of Intrusion",3.5e8,"yettt","e75000000000 Tickspeed pro Sekunde in EC5 erreichen", "Nach dem Ausrüsten der Glyphs eine Sekunde Time Shards aufbauen lassen, erst dann EC5 starten."],
     [15,"Fabrication of Ideals",1e9,"yettt","e1500000000000 Antimatter erreichen, ohne jemals ID1 zu besitzen", "Vor einer frischen Reality Requirement Lock aktivieren. Auch EC7/Time Dimensions können ID1 erzeugen! Mit Lock EC10+11 abschließen und den vollständigen Study-Baum kaufen. Richtwerte: Ra fertig, Cosmic Filament gekauft, Momentum mindestens 1,16 und e67–e69 Sacrifice."],
     [16,"Massless Momentum",3.5e9,"","Lai'tela zweimal in unter 30 Sekunden destabilisieren", "Dark-Matter-Dimensionen verbessern und Lai'telas Lauf wiederholen, bis zwei Dimensionen deaktiviert sind."],
-    [17,"Chiral Oscillation",6e9,"","mindestens 20 Singularities auf einmal automatisch kondensieren", "Erst nach 50 Gesamt-Singularities angehen. Die Singularity-Kappe für mindestens 20 Ertrag erhöhen und auf automatisches Kondensieren warten; ein manueller Klick erfüllt die Bedingung nicht."],
+    [17,"Chiral Oscillation",6e9,"","mindestens 20 Singularities auf einmal automatisch kondensieren", "Auto-Condense wird bereits bei 8 Gesamt-Singularities verfügbar. Die 50er-Marke verdoppelt den Singularity-Ertrag und ist die Pin-Orientierung für dieses Puzzle. Die Singularity-Kappe für mindestens 20 Ertrag erhöhen und auf automatisches Kondensieren warten; ein manueller Klick erfüllt die Bedingung nicht."],
     [18,"Dimensional Symmetry",1.5e10,"ydddd","80.000 Galaxien aller Typen erreichen", "Dilation und Replicanti maximieren. Richtwerte aus den Pins: e74–e75 Sacrifice, 50–52 % Continuum-Zuwachs und e198–e199 Jahre gespeicherte Black-Hole-Zeit."],
-    [19,"Deterministic Radiation",2.8e10,"iiiep","3,85 Millionen Tickspeed Continuum mit höchstens acht Studies im ganzen Lauf erreichen", "Requirement Lock vor einer frischen Reality aktivieren. Nur den unten stehenden Acht-Study-Baum kaufen. Big Crunch und automatische EC-Abschlüsse sind erlaubt und helfen."],
+    [19,"Deterministic Radiation",2.8e10,"iiiep","3,85 Millionen Tickspeed Continuum mit höchstens acht gleichzeitig gekauften normalen Studies im gesamten Lauf erreichen", "Requirement Lock vor einer frischen Reality aktivieren. Nur den unten stehenden Acht-Study-Baum kaufen. Zu keinem Zeitpunkt mehr als acht normale Studies besitzen; Respec löscht eine vorherige Überschreitung nicht. Big Crunch und automatische EC-Abschlüsse sind erlaubt und helfen."],
     [20,"Vacuum Acceleration",3e12,"","100 % Continuum-Zuwachs erreichen", "Dark-Matter-Produktion steigern und den Annihilation-Multiplikator ausbauen, bis der Continuum-Zuwachs 100 % beträgt."],
     [21,"Existential Elimination",1e13,"yeidd","e7400000000000 Antimatter ohne Continuum im gesamten Lauf erreichen", "Continuum im Dimensions-/Autobuyer-Tab abschalten und Requirement Lock vor der neuen Reality aktivieren. Den RM-Push mit ausgeschaltetem Continuum spielen."],
     [22,"Total Termination",1.5e14,"ccccd","e150000000000 Antimatter in Effarig mit vier Cursed Glyphs erreichen", "Effarigs Reality mit vier Cursed und einem Dilation-Glyph starten. Richtwert: e89 Sacrifice. Keine zusätzlichen normalen Glyphs einsetzen."],
@@ -2058,6 +2062,9 @@
   function imaginarySchritte(p, phase) {
     const s = [];
     let bank = p.resources?.imaginaryMachines ?? 0;
+    const cap = p.resources?.imaginaryMachineCap ?? 0;
+    const capBekannt = Number.isFinite(cap) && cap > 0;
+    const projected = p.resources?.projectedImaginaryMachineCap;
     const limit = phase === "imaginaryMachines" ? 15 : 25;
     const fehlt = IM_ZIELE.filter(([id]) => id <= limit && !hat(p.imaginaryUpgrades, id));
     const kaufbar = fehlt.filter(([id, , kosten]) => hat(p.imaginaryUpgradeUnlocks, id) && bank >= kosten);
@@ -2067,25 +2074,53 @@
       bank -= kosten;
       gekauft.add(id);
       s.push(aktion("imaginaryUpgradesElfBisFuenfzehn", "imKauf", `Kauf ${name} für ${kosten.toExponential().replace("e+", "e")} IM.`,
-        [`Reality → Imaginary Upgrades, Reihe ${Math.ceil(id / 5)}, Spalte ${(id - 1) % 5 + 1}: Die Bedingung ist bereits gespeichert. Kauf das Upgrade.`], `${name} ist gekauft.`,
+        [`Bestand vor diesem Kauf: ${zahl(bank + kosten)} IM; Kappe: ${zahl(cap)} IM; Preis: ${zahl(kosten)} IM.`,
+          `Reality → Imaginary Upgrades, Reihe ${Math.ceil(id / 5)}, Spalte ${(id - 1) % 5 + 1}: Die Bedingung ist bereits gespeichert. Kauf das Upgrade. Danach neu importieren, weil Käufe Bestand und Kappen ändern können.`], `${name} ist gekauft.`,
         `${name} ist bereits freigeschaltet und bezahlbar. ${IM_GRUENDE[id]}`));
-      if (id === 15 || id === 25) return s;
+      // Transience makes the cap depend on purchased Imaginary upgrades.
+      // Re-import after such a purchase before planning against the old cap.
+      if (id === 13 || hat(p.imaginaryUpgrades, 13) || id === 15 || id === 25) return s;
     }
     for (const [id, name, kosten, code, ziel, tipp] of fehlt.filter(([id]) => !gekauft.has(id))) {
       const gespeichert = hat(p.imaginaryUpgradeUnlocks, id);
       const idText = `Reihe ${Math.ceil(id / 5)}, Spalte ${(id - 1) % 5 + 1}`;
       const kostenText = kosten.toExponential().replace("e+", "e");
-      const wie = [];
+      const capWand = bank < kosten && capBekannt && cap <= kosten;
+      const imStand = `Bestand: ${zahl(bank)} IM; aktuelle Kappe: ${capBekannt ? zahl(cap) + " IM" : "im Spiel prüfen (kein positiver Save-Wert)"}; Preis: ${zahl(kosten)} IM. Projected IM cap: ${Number.isFinite(projected) ? zahl(projected) + " IM" : "im Spiel ablesen; aus diesem Export nicht sicher berechenbar"}.`;
+      // A new special run must not precede the funding action that makes its
+      // purchase possible. Preserve a special run already in progress.
+      const laufend = Boolean(p.celestials?.current);
+      if (capWand && !laufend) {
+        const glyphs = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])];
+        const y = glyphs.some(g => g.type === "reality" && g.level >= 15000);
+        const rmSet = !y ? "epppi" : hat(p.achievementIds, 177) ? "epiii" : hat(p.imaginaryUpgrades, 22) ? "yeiii"
+          : Math.max(...Object.values(p.glyphSacrificeLog10 ?? {}), 0) >= 77 ? "yeiip" : hat(p.imaginaryUpgrades, 14) ? "yettp" : "yettt";
+        s.push(aktion("raNacharbeitImaginary", "imFarm", `Erhöhe das IM-Limit über ${kostenText} für ${name}${gespeichert ? "; die Bedingung ist erledigt" : ""}.`,
+          [imStand,
+            cap === kosten ? `Preis und Kappe sind gleich. Erhöhe die Kappe über ${kostenText}, damit die Annäherung an die Kappe den Kauf nicht blockiert.` : `Die Kappe ist zu klein. Erhöhe die Kappe über ${kostenText}; Warten an der alten Kappe macht den Kauf nicht möglich.`,
+            `Außerhalb eines Celestial-Laufs RM/IM-Push mit ${glyphBuild(rmSet)}. Für neue Glyph-Level separat ${glyphBuild(y ? "yerrr" : "errrr")} testen.`,
+            "Für den Cap-Push Auto-Reality ausschalten und ein Script pausieren, das früh zurücksetzt. Effarigs RM-/Produktions-Effekte sowie die Effekte der übrigen Glyphs prüfen; nach der tatsächlichen Projected-IM-cap-Anzeige vergleichen, nicht allein nach dem Setnamen.",
+            "Bezahlbare Verstärker der ersten zwei Imaginary-Reihen prüfen. Bei Bedarf Glyph-Level erhöhen, Alchemy auffüllen, schwache Glyphs opfern und Teresas Multiplikator ausbauen. Gute Spezialglyphs schützen.",
+            y ? "Dein Reality-Glyph ab Level 15.000 ist schon vorhanden; dafür keinen erneuten Herstellungsschritt einplanen." : "Nur wenn die Reality-Reaktion freigeschaltet ist und noch kein passender Glyph vorliegt, einen Reality-Glyph ab Level 15.000 herstellen; das leert Reality-Alchemy und erfordert erneutes Auffüllen.",
+            "Stopppunkt: Die tatsächliche IM-Kappe liegt über dem Preis. Sie aktualisiert sich beim RM-Push; dafür keinen unnötigen Reality-Reset erzwingen. Danach IM sammeln und den neuen Stand importieren."],
+          `Die aktuelle IM-Kappe liegt über ${kostenText}; ${gespeichert ? "danach fehlt nur das Ansammeln des Kaufpreises" : "danach ist die Finanzierung des Requirement-Laufs möglich"}.`,
+          "Zuerst eine erreichbare Kaufgrenze schaffen. Ein spezielles Glyph-/Celestial-Requirement erhöht die zu kleine IM-Kappe nicht automatisch."));
+      }
+      const wie = [imStand];
       if (!gespeichert) {
         if (code) wie.push(`Empfohlenes Set: ${glyphBuild(code)}. Vor dem betreffenden Lauf ausrüsten.`);
         wie.push(hat(p.imaginaryRequirementLocks, id)
           ? tipp.replace("Requirement Lock vor einer frischen Reality aktivieren.", "Dein Requirement Lock ist aktiv; für diese Bedingung eingeschaltet lassen.")
             .replace("Vor einer frischen Reality Requirement Lock aktivieren.", "Dein Requirement Lock ist bereits aktiv; eingeschaltet lassen.")
           : tipp);
+        if ([15, 19, 21, 24, 25].includes(id)) wie.push("Vor dem neuen Requirement-Lauf Lock und Glyphs einrichten und den Automator auf verbotene ECs, indirekte Produktion sowie Auto-Reality prüfen. Erst nach gespeichertem Requirement wieder normal farmen.");
+        if (id === 15 && p.requirementChecks?.maxID1Log10 != null) wie.push("Der Save protokolliert bereits ID1 in dieser Reality. Für das Nie-ID1-Requirement einen frischen Lauf mit vorher aktiviertem Lock beginnen.");
+        if (id === 19 && (p.requirementChecks?.maxStudies ?? 0) > 8) wie.push(`In dieser Reality waren bereits ${p.requirementChecks.maxStudies} Studies gleichzeitig gekauft. Ein Respec genügt nicht; nach aktiviertem Lock eine neue Reality beginnen.`);
       }
-      if (bank < kosten) wie.push((p.resources?.imaginaryMachineCap ?? 0) <= kosten
-        ? `Erhöhe den projizierten RM-Ertrag für eine IM-Kappe über ${kostenText}; an einer zu kleinen Kappe hilft Warten nicht.`
-        : `Lass IM bis ${kostenText} anwachsen; die gespeicherte Bedingung bleibt über weitere Realities erhalten.`);
+      if (bank < kosten) wie.push(capWand
+        ? `Erhöhe den projizierten RM-Ertrag für eine IM-Kappe über ${kostenText}; an einer zu kleinen Kappe hilft Warten nicht.${laufend ? " Den bereits laufenden Spezialversuch nicht dafür abbrechen: erst seine Bedingung speichern, danach außerhalb des Celestial-Laufs die Kappe pushen." : " Zuerst den vorgeschalteten Cap-Push erledigen."}`
+        : capBekannt ? `Lass IM bis ${kostenText} anwachsen; die gespeicherte Bedingung bleibt über weitere Realities erhalten.`
+          : `Prüfe die aktuelle IM-Kappe im Spiel. Liegt sie höchstens bei ${kostenText}, zuerst außerhalb eines Celestial-Laufs die Kappe darüber pushen; nur bei höherer Kappe IM bis zum Preis sammeln.`);
       wie.push(`Sobald die Bedingung als erfüllt angezeigt wird und ${kostenText} IM da sind, ${name} (${idText}) kaufen.`);
       const schritt = aktion("imaginaryUpgradesElfBisFuenfzehn", "imZiel",
         gespeichert ? `Spare ${kostenText} IM für ${name}; die Bedingung ist erledigt.` : `${name}: ${ziel}.`,
@@ -2093,21 +2128,6 @@
       if (id === 19 && !gespeichert) { schritt.baeume = [{ bezeichnung: "Genau acht Studies", importString: "11,21,31,41,51,61,72,82|0" }]; schritt.baeumeSichtbar = true; }
       s.push(schritt);
       if (bank < kosten) {
-        // Attempt the next challenge when it is fundable. A cap wall first
-        // needs the ordinary farming loop, not four more expensive challenges.
-        const cap = p.resources?.imaginaryMachineCap ?? 0;
-        if (cap <= kosten && !p.celestials?.current) {
-          const y = [...(p.activeGlyphs ?? []), ...(p.inventoryGlyphs ?? [])].some(g => g.type === "reality" && g.level >= 15000);
-          const rmSet = !y ? "epppi" : hat(p.achievementIds, 177) ? "epiii" : hat(p.imaginaryUpgrades, 22) ? "yeiii"
-            : Math.max(...Object.values(p.glyphSacrificeLog10 ?? {}), 0) >= 77 ? "yeiip" : hat(p.imaginaryUpgrades, 14) ? "yettp" : "yettt";
-          s.push(aktion("raNacharbeitImaginary", "imFarm", `Erhöhe das IM-Limit über ${kostenText} mit dem nächsten Farm-Zyklus.`,
-            [`RM/IM-Push mit ${glyphBuild(rmSet)}; neue Glyph-Level mit ${glyphBuild(y ? "yerrr" : "errrr")}. Außerhalb eines Celestial-Laufs farmen.`,
-              "In den ersten beiden Imaginary-Reihen bezahlbare Verstärker kaufen. Runic Assurance (Reihe 2, Spalte 2) verzögert Glyph Instability; bessere Glyph-Level erhöhen die Alchemy-Kappe.",
-              `Danach Alchemy auffüllen, schwache Glyphs opfern und Teresas Multiplikator mit ${glyphBuild(y ? "yettt" : "epppp")} verbessern. Mit dem stärkeren Set zurück zum IM-Push.`,
-              "Bei freigeschalteter Reality-Reaktion einen Reality-Glyph ab Level 15.000 herstellen und in die angegebenen Sets aufnehmen. Bis dahin bleibt das Set ohne Reality-Glyph gültig.",
-              "Die Anzeige „Projected Imaginary Machine cap“ muss steigen. IM sammeln sich danach automatisch an; endlos an derselben zu niedrigen Kappe warten bringt nichts."], `Das IM-Limit liegt über ${kostenText}.`));
-          if (!raSpaetFertig(p) && p.celestials?.ra) s.push(...raSchritte(p).filter(schritt => schritt.gruppe !== "raImPush"));
-        }
         break;
       }
       // The cap and future unlocks can change after the next purchase; do not
@@ -2115,6 +2135,36 @@
       if (s.length >= MAX_SICHTBAR || id === 15 || id === 25) break;
     }
     return s;
+  }
+
+  function pelleRsHinweise(p, text) {
+    const pelle = p.celestials?.pelle ?? {};
+    const gekauft = pelle.rebuyables?.antimatterDimensionMult ?? 0;
+    const preise = [...new Set([...text.matchAll(/e(\d+)-RS-AD-Multiplikator/g)].map(m => Number(m[1])))];
+    const hinweise = [];
+    for (const exponent of preise) {
+      if (gekauft >= exponent - 1) {
+        // Replace only purchase/wait clauses; unrelated EP/Chaos/Crunch work
+        // in the same source sentence must survive.
+        const ziel = `e${exponent}-RS-AD-Multiplikator`;
+        text = text.replace(new RegExp(`(?:spar(?:e)?(?: RS)? auf(?: den)?|kauf(?:e)?(?: den)?) ${ziel}`, "gi"), `Nutze den bereits gekauften ${ziel}`)
+          .replace(new RegExp(`, während du auf den ${ziel} wartest`, "gi"), `; der ${ziel} ist bereits gekauft`)
+          .replace(new RegExp(`falls das Warten auf den ${ziel} länger als \\d+ Minuten dauert`, "gi"), `falls zusätzliche Replicanti für das aktuelle Ziel fehlen; der ${ziel} ist bereits gekauft`);
+        hinweise.push(`Der e${exponent}-RS-AD-Multiplikator ist bereits gekauft; diesen Kauf überspringen.`);
+      } else {
+        const bestand = pelle.realityShardsLog10;
+        hinweise.push(`AD-Kaufziel der Route: e${exponent} RS; Bestand: ${Number.isFinite(bestand) ? `e${bestand.toFixed(3)} RS` : "im Spiel prüfen"}. `
+          + (Number.isFinite(bestand) && bestand < exponent ? "Noch nicht bezahlbar; erst RS ansammeln und dann kaufen." : "Vor dem Kauf den angezeigten RS-Bestand und UI-Preis vergleichen."));
+      }
+    }
+    if (preise.length && gekauft < 44) {
+      // Official rebuyable cost: 100 * 10^x * 1000^max(0, x - 41).
+      const kostenLog = 2 + gekauft + 3 * Math.max(0, gekauft - 41);
+      const bestand = pelle.realityShardsLog10;
+      hinweise.push(`Tatsächlicher nächster AD-Kauf bei ${gekauft} gekauften Stufen: e${kostenLog} RS${kostenLog >= 27 && kostenLog <= 29 ? ` = ${10 ** (kostenLog - 27)} Oc` : ""}. `
+        + (Number.isFinite(bestand) ? `Bestand e${bestand.toFixed(3)} RS: ${bestand >= kostenLog ? "bezahlbar; Kaufpreis im Spiel bestätigen" : "noch nicht bezahlbar"}.` : "RS-Bestand und Kaufpreis im Spiel prüfen."));
+    }
+    return [text, ...hinweise].filter(Boolean);
   }
 
   function pelleSchritte(p) {
@@ -2127,10 +2177,16 @@
       ["Kauf verfügbare Generator-Upgrades. Lass den additiven Boost aus, wenn er einen großen Teil der Galaxien kosten würde.",
         "Sobald die aktuelle Galaxien-Kappe erreicht ist, das angezeigte Rift-Opfer starten. Nicht weiter an der Kappe warten; nach dem Opfer die nächste Phase ausbauen."], "Der Abspann erscheint.")];
     if (hat(pelle.progress, 5)) {
-      const prozent = Math.max(0, pelle.riftFillLog10?.paradox ?? Math.log10((pelle.rifts?.paradox ?? 0) + 1));
-      s.push(aktion("pelleBisGalaxyGenerator", "pelleDilation", "Richte den permanenten Dilation-Lauf auf DT aus.",
-        ["Dilation-Glyph ausrüsten. AD + TD + Idle spielen, alle dunklen Studies außer TS223; ab 50 % Rift 5 wieder TS224 statt TS223.",
-          "Bis zum Pelle-AD-Multiplikator für e47 RS sind EC11 mit TS231+233 gut für Remnants und Tachyon Particles. Danach den normalen Dilation-Lauf verwenden."], "Das Dilation-Set läuft und kauft die passenden Studies."));
+      const prozent = Math.max(0, pelle.riftEffects?.paradox?.percentage ?? pelle.riftFillLog10?.paradox ?? Math.log10((pelle.rifts?.paradox ?? 0) + 1));
+      const studies = p.studies ?? [];
+      const zielStudy = prozent >= 50 ? 224 : 223;
+      const fehlen = [71, 73, 123, zielStudy].filter(id => !studies.includes(id));
+      const dilationGlyph = (p.activeGlyphs ?? []).some(g => g.type === "dilation");
+      if (fehlen.length || !dilationGlyph) s.push(aktion("pelleBisGalaxyGenerator", "pelleDilation", "Ergänze das fehlende Setup für die permanente Dilation.",
+        [dilationGlyph ? "Dein Dilation-Glyph ist bereits ausgerüstet." : "Dilation-Glyph für den DT-Push verwenden.",
+          fehlen.length ? `Vorhandene Studies behalten; nur den Zugang zu ${fehlen.map(id => "TS" + id).join(", ")} prüfen und fehlende Studies mit den ${zahl(p.unspentTT)} freien TT ergänzen. AD + TD + Idle nutzen.` : "AD-, TD- und Idle-Pfad sind bereits gekauft; dafür keinen neuen Tree laden.",
+          prozent < 50 ? "TS223 vor dem 50-%-Meilenstein behalten. Kein vollständiger Respec für bereits gekaufte Studies." : "Ab 50 % Paradox TS224 statt TS223 nutzen. Falls TS223 den Kauf sperrt, erst jetzt den gezielten Wechsel mit Respec planen.",
+          "60/60 EC und fünf Strikes bedeuten permanente Dilation. END ist erst nach den Galaxy-Generator-Phasen erreicht."], "Das fehlende Setup ist ergänzt; vorhandene Studies wurden nicht unnötig ersetzt."));
       for (const ziel of [15, 25, 50].filter(ziel => prozent < ziel)) s.push(aktion("pelleBisGalaxyGenerator", "pelleRift", `Fülle Rift 5 von etwa ${Math.floor(prozent)} % bis ${ziel} %.`,
         [`Dieser Meilenstein kommt vor vergleichbar teuren Upgrades bei e${ziel} DT${ziel === 50 ? "; nur ×5 DT hat dort Vorrang" : ""}.`,
           "Fülle portionsweise, wenn dein DT-Bestand mehr als 100-mal höher als der bisherige Rift-Füllwert ist. Anschließend DT wieder wachsen lassen."], `Rift 5 hat ${ziel} % erreicht.`,
@@ -2178,7 +2234,8 @@
             "Erreiche die 143 TT für die erste Eternity Challenge."][e.order];
           if (e.order === 20 && inf308Gekauft) titel = "Push weiter bis 6e20 EP.";
           const schritt = aktion("pelleBisEcs", "pelleCheckpoint", titel,
-            [text, "Für den jeweiligen Push wechseln: Power für AM/Remnants, Infinity für IP/Rift 1, Replication für Rift 3, Time für EP/Rift 4. TS21 behalten; Idle benutzen."],
+            [...pelleRsHinweise(p, text), "Für den jeweiligen Push wechseln: Power für AM/Remnants, Infinity für IP/Rift 1, Replication für Rift 3, Time für EP/Rift 4. TS21 behalten; Idle benutzen.",
+              ...(tt >= 103 ? [`Nächster EC-Einstieg: 143 TT für EC3x1, aktuell fehlen ${Math.max(0, 143 - tt)} TT. Bereits gekauftes TS171 behalten; freie TT, TD-Käufe und den jeweils nächsten AM-/IP-/EP-Theorem-Preis prüfen.`] : [])],
             e.recommendedTT ? `${e.recommendedTT} TT sind erreicht.` : "Die genannten Werte oder Käufe sind erreicht.");
           schritt.eigeneRoute = true;
           schritt.inhalt.warum = ["",
@@ -2221,10 +2278,17 @@
         if (e.kind === "ec" ? (clears[e.ec - 1] ?? 0) >= e.completion : tt >= zielTT) continue;
         const laeuft = e === aktiv;
         const titel = e.kind === "ec" ? `${laeuft ? "Beende" : "Spiele"} ${e.run} in Pelles Reality.` : `Push in Pelles Reality auf ${zielTT} TT.`;
+        const pinNotiz = guide.runNotesDe[String(e.order)];
         const schritt = aktion("pelleEcsBisDilation", "pelleRoute", titel,
           [laeuft ? "Bleib in der laufenden EC. Jetzt nicht respecen oder eine andere EC starten."
             : `${{ Infin: "Infinity", Rep: "Replication", Time: "Time", Power: "Power" }[e.glyph] ?? e.glyph}-Glyph verwenden. ${tt < zielTT ? `Zuerst bis ${zielTT} TT farmen, dann ` : "Dann "}den unten stehenden Tree laden.`,
-            ...(guide.runNotesDe[String(e.order)] ? [guide.runNotesDe[String(e.order)]] : []),
+            ...(pinNotiz ? pelleRsHinweise(p, pinNotiz) : []),
+            ...(e.ec === 8 ? [
+              `EC8x${e.completion}: Doom-Ziel e${2800 + 900 * (e.completion - 1)} IP. Insgesamt höchstens 50 ID-Käufe und 40 Replicanti-Upgradekäufe; ID1 bevorzugen und die Käufe gezielt verteilen.`,
+              `Aktuell: ${Number.isFinite(p.replicantiLog10) ? "e" + Math.floor(p.replicantiLog10) : "unbekannte"} Replicanti; ${zahl(p.replicantiGalaxies)} RG von ${zahl(p.replicantiGalaxyCap)}. ${laeuft ? `Verbleibende Kaufbudgets: ${zahl(p.ec8PurchasesLeft?.infinityDimensions)} ID, ${zahl(p.ec8PurchasesLeft?.replicantiUpgrades)} Replicanti.` : "Kaufbudgets nach EC-Start prüfen."}`,
+              `Für EC8x${e.completion} nennt der Pelle-Pin ungefähr ${e.completion >= 5 ? "3 % Replicanti-Chance und ×1e30 Chaos" : e.completion >= 4 ? "5 % Replicanti-Chance und ×1e27 Chaos" : "10 % Replicanti-Chance als frühen Ausgangspunkt"}. Das sind Richtwerte, keine zusätzlichen Eintrittsbedingungen.`,
+              "Bei Stillstand zuerst Chance/Intervall/RG-Verteilung, Replicanti über e1300 und den wirksamen Chaos-Bonus prüfen. Auto-Crunch und Auto-Eternity dürfen den Aufbau nicht vor dem IP-Ziel zurücksetzen. Bei deutlich zu wenig Chaos zwischen den ECs Rifts aufbauen; nicht allein denselben Tree neu laden."
+            ] : []),
             "Innerhalb einer EC alle Rifts außer Rift 3 pausieren. Zwischen den Läufen Time Dimensions und die nächste TT-Marke pushen."],
           e.kind === "ec" ? `${e.run} ist abgeschlossen.` : `${zielTT} TT sind erreicht.`,
           "Pelles Rifts und deaktivierte Studies verändern die sinnvolle Reihenfolge. Dieser nächste offene Schritt nutzt die bereits erreichten Abschlüsse und das angegebene TT-Budget. "
@@ -2256,9 +2320,9 @@
       if (erster?.gruppe === "pelleCheckpoint" && (p.totalTT ?? 0) >= 103) {
         const a = p.automation ?? {};
         const eternity = a.eternity;
-        const vorab = [];
+        const vorab = ["Zwei Modi: Für EP/min mit Time-Glyph Auto-Eternity einschalten und 1 / 1,5 / 2 reale Sekunden nach angezeigtem EP/min vergleichen. Für den folgenden einzelnen IP-/AM-/EP-Rekordpush Auto-Eternity ausschalten und am konkreten Ziel manuell eternitieren; danach den besseren kurzen Farmzyklus wieder einschalten."];
         if ((eternity?.enabled ?? (a.enabled && eternity?.active)) && eternity.modeName === "time") {
-          vorab.push(`Auto-Eternity steht bei dir auf ${eternity.timeSeconds} reale Sekunden. Für die langen IP-/AM-/EP-Pushes vorübergehend ausschalten und am erreichten EP-Ziel manuell eternitieren; für kurze Farmzyklen danach mit derselben Einstellung wieder einschalten.`);
+          vorab.push(`Auto-Eternity steht bei dir auf ${eternity.timeSeconds} reale Sekunden. Für die langen IP-/AM-/EP-Pushes vorübergehend ausschalten; für EP/min darf der kurze Auto-Eternity-Zyklus laufen.`);
         }
         if (p.automatorRunning) vorab.push("Dein Automator läuft. Für den manuellen Push pausieren, damit er die Autobuyer-Einstellungen nicht wieder ändert oder selbst zurücksetzt.");
         const rifts = c.pelle?.riftEffects ?? {};
@@ -2271,15 +2335,23 @@
     if (phase === "v") schritte.push(...vSchritte(p));
     if (phase === "ra") schritte.push(...raSchritte(p));
     if (phase === "imaginaryMachines" || phase === "laitela") {
+      const imSchritte = imaginarySchritte(p, phase);
       // Dark Matter is the production engine behind the later unlock runs.
       if (phase === "laitela" && !p.celestials?.current && (c.laitela?.difficultyTier ?? 0) < 8) {
+        const zeit = c.laitela?.fastestCompletionSeconds;
+        const gemesseneZeit = Number.isFinite(zeit) && zeit >= 30 && zeit < 3600
+          && !(zeit === 300 && (c.laitela?.difficultyTier ?? 0) > 0);
         add("laitelaDimensionenAbschalten", "laitelaProduktion", "Baue Dark Matter und Dark Energy für den nächsten Lai'tela-Lauf aus.",
           ["Kauf bei allen offenen Dark Matter Dimensions die Intervall- und Produktions-Upgrades. Bei minimalem Intervall Ascend benutzen und wieder ausbauen.",
-            hat(p.imaginaryUpgrades, 19) ? "Annihilation anfangs nach 2–3 Minuten. Sobald e60 Dark Matter sofort zurückkommen, jeden zweiten Tick annihilieren; zwischendurch längere Produktionsläufe. Zielbereich des Multiplikators: ×2e8–2e9." : "Dark Energy bis zur Singularity-Kappe aufbauen und kondensieren. Ab 50 Gesamt-Singularities den automatischen Ertrag auf mindestens 20 einstellen.",
-            `Nächster Destabilisations-Lauf: ${glyphBuild(hat(p.imaginaryUpgrades, 23) && hat(p.imaginaryUpgrades, 24) ? "yeddd" : hat(p.imaginaryUpgrades, 21) ? "ydddd" : "yeddd")}. Unter 30 Sekunden deaktiviert die nächste Dimension. Der Automator muss auch hier kurz dilatieren, wenn TP ≤ 10.`],
+            hat(p.imaginaryUpgrades, 19) ? "Annihilation anfangs nach 2–3 Minuten. Zuerst die nächste bezahlbare Produktionsverbesserung und den Wiederaufbau nach einem Reset messen. Erst wenn e60 Dark Matter sofort zurückkommen, kurze Zyklen testen; ×2e8–2e9 ist eine späte Pin-Orientierung und keine Pflicht vor der nächsten Lai'tela-Stufe." : "Dark Energy bis zur Singularity-Kappe aufbauen und kondensieren. Auto-Condense startet bei 8 Gesamt-Singularities; 50 Gesamt-Singularities verdoppeln den Ertrag und sind die Pin-Orientierung für mindestens 20 automatisch auf einmal.",
+            `Ein Probe-Lauf für die nächste Destabilisation: ${glyphBuild(hat(p.imaginaryUpgrades, 23) && hat(p.imaginaryUpgrades, 24) ? "yeddd" : hat(p.imaginaryUpgrades, 21) ? "ydddd" : "yeddd")}. Die tatsächlichen Effekte, Level und Seltenheit prüfen; YDDDD und YEDDD sind Kandidaten, keine Erfolgsgarantie. Unter 30 Sekunden deaktiviert die nächste Dimension. Der Automator muss auch hier kurz dilatieren, wenn TP ≤ 10.`,
+            gemesseneZeit ? `Gespeicherte Bestzeit dieser Stufe: ${zeit.toLocaleString("de-DE", { maximumFractionDigits: 3 })} Sekunden. Für unter 30 Sekunden fehlen mehr als ${(zeit - 30).toLocaleString("de-DE", { maximumFractionDigits: 3 })} Sekunden Verbesserung; noch keine weitere Dimension deaktiviert. Zuerst Intervall-/Produktions-Upgrades, Ascension und Singularity-Boni ausbauen.`
+              : "Zeit nach einem Probe-Lauf ablesen. 31,05 Sekunden wäre trotz Verbesserung noch kein Clear; dann Intervall-/Produktions-Upgrades, Ascension und Singularity-Boni ausbauen, bevor derselbe Lauf wiederholt wird.",
+            `AFK: ${c.laitela?.singularities >= 8 ? "Auto-Condense auf passenden Ertrag stellen" : "Auto-Condense erst ab 8 Gesamt-Singularities verfügbar"}; ${c.laitela?.singularities >= 30 ? "freigeschaltete Dark-Matter-Dimension-Autobuyer prüfen" : "DMD-Autobuyer erst ab 30 Singularities, bis dahin manuell kaufen"}; ${c.laitela?.singularities >= 1e8 ? "Auto-Ascend prüfen" : "Auto-Ascend erst ab 1e8 Singularities"}. Vor dem Weggehen zwei Produktionszyklen kontrollieren. Für DM/DE zählen deren Erträge; ein RM-/IM-Set ist dafür nicht automatisch besser. IM wachsen nur bis zur Kappe.`],
           "Dark Matter und Singularities sind gestiegen; der nächste Lauf oder das nächste unten genannte Upgrade ist erreichbar.");
       }
-      schritte.push(...imaginarySchritte(p, phase));
+      if (["imFarm", "imKauf"].includes(imSchritte[0]?.gruppe)) schritte.unshift(...imSchritte);
+      else schritte.push(...imSchritte);
     }
     if (phase === "teresa") {
       if (!hat(c.teresa?.unlocks, 0)) {

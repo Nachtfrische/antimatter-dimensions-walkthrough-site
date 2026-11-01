@@ -906,6 +906,7 @@
       inventoryGlyphs,
       glyphProtectedSlots: 10 * safeInt(reality.glyphs?.protectedRows, 11),
       glyphRespecIntoProtected: Boolean(save.options?.respecIntoProtected),
+      glyphAutoPurge: Boolean(reality.autoAutoClean),
       glyphSets: (Array.isArray(reality.glyphs?.sets) ? reality.glyphs.sets : [])
         .slice(0, 7).map((set, index) => ({ slot: index + 1,
           glyphs: (Array.isArray(set?.glyphs) ? set.glyphs : []).slice(0, 5).map(glyphSummary).filter(Boolean),
@@ -966,6 +967,10 @@
         && Array.isArray(reality.automator?.state?.stack) && reality.automator.state.stack.length > 0,
       automatorRepeat: Boolean(reality.automator?.state?.repeat),
       automatorForceRestart: Boolean(reality.automator?.state?.forceRestart),
+      // The top saved frame contains the raw text-editor line, not its script.
+      automatorCurrentLine: Array.isArray(reality.automator?.state?.stack)
+        && safeInt(reality.automator.state.stack.at(-1)?.lineNumber) > 0
+        ? safeInt(reality.automator.state.stack.at(-1).lineNumber) : null,
       autoAchievementsEnabled: Boolean(reality.autoAchieve),
       gainedAutoAchievements: Boolean(reality.gainedAutoAchievements),
       // History is newest first. Placeholder runs must not count toward r111/r143.
@@ -1093,7 +1098,13 @@
         noContinuum: Boolean(save.requirementChecks?.reality?.noContinuum),
         noRG: Boolean(save.requirementChecks?.eternity?.noRG),
         noAD8: Boolean(save.requirementChecks?.infinity?.noAD8),
-        maxGlyphs: safeInt(save.requirementChecks?.reality?.maxGlyphs, 10_000),
+        // Cursed Glyphs count as -3; negative maxima are valid run history.
+        maxGlyphs: finiteNumber(save.requirementChecks?.reality?.maxGlyphs, null),
+        maxID1: save.requirementChecks?.reality?.maxID1 == null ? null
+          : decimalNumber(save.requirementChecks.reality.maxID1),
+        maxID1Log10: decimalLog10(save.requirementChecks?.reality?.maxID1),
+        maxStudies: save.requirementChecks?.reality?.maxStudies == null ? null
+          : safeInt(save.requirementChecks.reality.maxStudies),
         slowestBlackHole: finiteNumber(save.requirementChecks?.reality?.slowestBH, 1),
       },
       resources: {
@@ -1126,6 +1137,9 @@
           * (imaginaryUpgrades.includes(13) && !pelle.doomed
             ? 1 + Object.values(reality.imaginaryRebuyables ?? {}).reduce((s, n) => s + safeInt(n), 0) / 20
               + imaginaryUpgrades.length / 2 : 1)),
+        // Projected IM cap depends on pending EP and all current RM multipliers.
+        // It is not the saved cap and cannot be recovered exactly by this parser.
+        projectedImaginaryMachineCap: null,
         maxDilatedTimeExponent: decimalExponent(save.records?.thisReality?.maxDT),
         maxReplicantiExponent: decimalExponent(save.records?.thisReality?.maxReplicanti),
       },
@@ -1177,6 +1191,14 @@
       replicantiUnlocked: Boolean(save.replicanti?.unl),
       replicantiGalaxies: safeInt(save.replicanti?.galaxies, Number.MAX_SAFE_INTEGER),
       replicantiGalaxyCap: safeInt(save.replicanti?.boughtGalaxyCap, Number.MAX_SAFE_INTEGER),
+      replicantiUpgrades: {
+        chance: finiteNumber(save.replicanti?.chance, null),
+        intervalMs: finiteNumber(save.replicanti?.interval, null),
+      },
+      ec8PurchasesLeft: {
+        infinityDimensions: save.eterc8ids == null ? null : safeInt(save.eterc8ids, 50),
+        replicantiUpgrades: save.eterc8repl == null ? null : safeInt(save.eterc8repl, 40),
+      },
       replicantiLog10: decimalLog10(save.replicanti?.amount),
       replicantiRounded: Math.round(decimalNumber(save.replicanti?.amount)),
       currentInfinitySeconds: Number.isFinite(save.records?.thisInfinity?.time) ? save.records.thisInfinity.time / 1000 : null,
@@ -1216,7 +1238,7 @@
           running: Boolean(teresa.run),
           bestRunAMExponent: decimalExponent(teresa.bestRunAM),
           bestRunAM: decimalNumber(teresa.bestRunAM),
-          perkShop: Array.from({ length: 5 }, (_, index) => safeInt(teresa.perkShop?.[index])),
+          perkShop: Array.from({ length: 6 }, (_, index) => safeInt(teresa.perkShop?.[index])),
           lastRepeatedMachinesLog10: decimalLog10(teresa.lastRepeatedMachines),
         },
         effarig: {
@@ -1230,6 +1252,7 @@
           completed: Boolean(enslaved.completed),
           tesseracts: safeInt(enslaved.tesseracts, 10_000),
           storedRealTime: finiteNumber(enslaved.storedReal, 0),
+          storedTimeUnit: "ms",
           storedTimeExponent: decimalExponent(enslaved.stored),
           storedTime: decimalNumber(enslaved.stored),
           storedTimeLog10: decimalLog10(enslaved.stored),
